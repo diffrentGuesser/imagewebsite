@@ -89,6 +89,14 @@
             margin-bottom: 20px;
         }
         
+        .admin-panel {
+            margin-top: 20px;
+            background-color: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
         .hidden {
             display: none !important;
         }
@@ -122,9 +130,75 @@
         .form-floating label {
             padding: 1rem 0.75rem;
         }
+        
+        #firebaseInitError {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background-color: #ff4444;
+            color: white;
+            padding: 10px;
+            text-align: center;
+            z-index: 9999;
+            display: none;
+        }
+        
+        .user-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .user-table th, .user-table td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        .user-table th {
+            background-color: #f8f9fa;
+            font-weight: 600;
+        }
+        
+        .user-table tr:hover {
+            background-color: #f5f5f5;
+        }
+        
+        .admin-badge {
+            background-color: #28a745;
+            color: white;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+        
+        .user-badge {
+            background-color: #6c757d;
+            color: white;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+        
+        .url-input-group {
+            display: flex;
+            align-items: center;
+        }
+        
+        .url-input-group .form-control {
+            flex: 1;
+            margin-right: 10px;
+        }
+        
+        .url-input-group .btn {
+            white-space: nowrap;
+        }
     </style>
 </head>
 <body>
+    <!-- Firebase Init Error -->
+    <div id="firebaseInitError"></div>
+
     <!-- Navigation -->
     <nav class="navbar navbar-expand-lg navbar-light bg-light sticky-top shadow-sm">
         <div class="container">
@@ -179,40 +253,83 @@
         <!-- Admin Controls (only visible to admins) -->
         <div id="adminControls" class="admin-controls hidden">
             <h3>Admin Panel</h3>
-            <div class="row">
-                <div class="col-md-6">
-                    <div class="mb-3">
-                        <label for="imageUpload" class="form-label">Upload New Image</label>
-                        <input class="form-control" type="file" id="imageUpload" accept="image/*">
-                    </div>
-                    <div class="mb-3">
-                        <label for="imageTitle" class="form-label">Image Title</label>
-                        <input type="text" class="form-control" id="imageTitle" placeholder="Enter image title">
-                    </div>
-                    <div class="mb-3">
-                        <label for="imageDescription" class="form-label">Description</label>
-                        <textarea class="form-control" id="imageDescription" rows="3"></textarea>
+            <ul class="nav nav-tabs" id="adminTabs">
+                <li class="nav-item">
+                    <a class="nav-link active" id="images-tab" data-bs-toggle="tab" href="#images-tab-pane">Images</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" id="users-tab" data-bs-toggle="tab" href="#users-tab-pane">User Management</a>
+                </li>
+            </ul>
+            
+            <div class="tab-content admin-panel" id="adminTabsContent">
+                <div class="tab-pane fade show active" id="images-tab-pane" role="tabpanel">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="imageUrl" class="form-label">Image URL</label>
+                                <div class="url-input-group">
+                                    <input type="text" class="form-control" id="imageUrl" placeholder="https://example.com/image.jpg">
+                                    <button class="btn btn-outline-secondary" id="previewImageBtn">Preview</button>
+                                </div>
+                                <small class="text-muted">Upload your image to a free hosting service like ImgBB first</small>
+                            </div>
+                            <div class="mb-3">
+                                <div id="imagePreviewContainer" class="hidden">
+                                    <img src="" alt="Preview" id="imagePreview" class="img-fluid rounded mb-2" style="max-height: 200px;">
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label for="imageTitle" class="form-label">Image Title</label>
+                                <input type="text" class="form-control" id="imageTitle" placeholder="Enter image title">
+                            </div>
+                            <div class="mb-3">
+                                <label for="imageDescription" class="form-label">Description</label>
+                                <textarea class="form-control" id="imageDescription" rows="3"></textarea>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="digitalPrice" class="form-label">Digital Rights Price ($)</label>
+                                    <input type="number" class="form-control" id="digitalPrice" min="0" step="0.01">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="physicalPrice" class="form-label">Physical Print Price ($)</label>
+                                    <input type="number" class="form-control" id="physicalPrice" min="0" step="0.01">
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label for="imageTags" class="form-label">Tags (comma separated)</label>
+                                <input type="text" class="form-control" id="imageTags" placeholder="nature, landscape, urban">
+                            </div>
+                            <button class="btn btn-primary" id="uploadImageBtn">Add Image</button>
+                        </div>
                     </div>
                 </div>
-                <div class="col-md-6">
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label for="digitalPrice" class="form-label">Digital Rights Price ($)</label>
-                            <input type="number" class="form-control" id="digitalPrice" min="0" step="0.01">
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label for="physicalPrice" class="form-label">Physical Print Price ($)</label>
-                            <input type="number" class="form-control" id="physicalPrice" min="0" step="0.01">
-                        </div>
-                    </div>
+                
+                <div class="tab-pane fade" id="users-tab-pane" role="tabpanel">
+                    <h4>User Management</h4>
                     <div class="mb-3">
-                        <label for="imageTags" class="form-label">Tags (comma separated)</label>
-                        <input type="text" class="form-control" id="imageTags" placeholder="nature, landscape, urban">
+                        <input type="text" class="form-control" id="userSearch" placeholder="Search users...">
                     </div>
-                    <button class="btn btn-primary" id="uploadImageBtn">Upload Image</button>
+                    <div class="table-responsive">
+                        <table class="user-table">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Email</th>
+                                    <th>Role</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="usersTableBody">
+                                <!-- Users will be loaded here -->
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
-            <hr class="my-4">
         </div>
 
         <!-- Gallery Filter -->
@@ -509,115 +626,109 @@
 
     <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
     <!-- Firebase SDK -->
-    <script type="module">
-        // Import the functions you need from the SDKs you need
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-app.js";
-        import { getAnalytics } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-analytics.js";
-        import { 
-            getAuth, 
-            createUserWithEmailAndPassword, 
-            signInWithEmailAndPassword, 
-            signOut, 
-            onAuthStateChanged, 
-            GoogleAuthProvider, 
-            signInWithPopup, 
-            OAuthProvider, 
-            sendPasswordResetEmail 
-        } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-auth.js";
-        import { 
-            getFirestore, 
-            collection, 
-            addDoc, 
-            getDocs, 
-            query, 
-            where, 
-            orderBy, 
-            doc, 
-            setDoc, 
-            getDoc, 
-            updateDoc,
-            serverTimestamp 
-        } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore.js";
-        import { 
-            getStorage, 
-            ref, 
-            uploadBytes, 
-            getDownloadURL 
-        } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-storage.js";
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-analytics-compat.js"></script>
 
-        // Your web app's Firebase configuration
-        const firebaseConfig = {
-            apiKey: "AIzaSyCNQgJypE5J0fHAuVKIHSXmrACfg2jjFFE",
-            authDomain: "image-1e1df.firebaseapp.com",
-            projectId: "image-1e1df",
-            storageBucket: "image-1e1df.appspot.com",
-            messagingSenderId: "757991507289",
-            appId: "1:757991507289:web:de40e3eb2186da011a7848",
-            measurementId: "G-6GF5NHYHG0"
-        };
+    <script>
+        // Firebase configuration and initialization
+        document.addEventListener('DOMContentLoaded', function() {
+            // Display loading state
+            document.body.style.cursor = 'wait';
+            
+            try {
+                // Your web app's Firebase configuration
+                const firebaseConfig = {
+                    apiKey: "AIzaSyCNQgJypE5J0fHAuVKIHSXmrACfg2jjFFE",
+                    authDomain: "image-1e1df.firebaseapp.com",
+                    projectId: "image-1e1df",
+                    storageBucket: "image-1e1df.appspot.com",
+                    messagingSenderId: "757991507289",
+                    appId: "1:757991507289:web:de40e3eb2186da011a7848",
+                    measurementId: "G-6GF5NHYHG0"
+                };
 
-        // Initialize Firebase
-        const app = initializeApp(firebaseConfig);
-        const analytics = getAnalytics(app);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
-        const storage = getStorage(app);
+                // Initialize Firebase
+                const app = firebase.initializeApp(firebaseConfig);
+                const analytics = firebase.analytics();
+                const auth = firebase.auth();
+                const db = firebase.firestore();
 
-        // DOM Elements
-        const loginBtn = document.getElementById('loginBtn');
-        const registerBtn = document.getElementById('registerBtn');
-        const logoutBtn = document.getElementById('logoutBtn');
-        const authButtons = document.getElementById('authButtons');
-        const userDropdown = document.getElementById('userDropdown');
-        const userName = document.getElementById('userName');
-        const adminControls = document.getElementById('adminControls');
-        const adminLink = document.getElementById('adminLink');
-        const cartIcon = document.getElementById('cartIcon');
-        const cartCount = document.getElementById('cartCount');
-        const galleryContainer = document.getElementById('galleryContainer');
-        const searchInput = document.getElementById('searchInput');
-        const searchBtn = document.getElementById('searchBtn');
-        const sortSelect = document.getElementById('sortSelect');
-        const imageUpload = document.getElementById('imageUpload');
-        const imageTitle = document.getElementById('imageTitle');
-        const imageDescription = document.getElementById('imageDescription');
-        const digitalPrice = document.getElementById('digitalPrice');
-        const physicalPrice = document.getElementById('physicalPrice');
-        const imageTags = document.getElementById('imageTags');
-        const uploadImageBtn = document.getElementById('uploadImageBtn');
-        const loginModal = new bootstrap.Modal(document.getElementById('loginModal'));
-        const registerModal = new bootstrap.Modal(document.getElementById('registerModal'));
-        const forgotPasswordModal = new bootstrap.Modal(document.getElementById('forgotPasswordModal'));
-        const imageModal = new bootstrap.Modal(document.getElementById('imageModal'));
-        const cartModal = new bootstrap.Modal(document.getElementById('cartModal'));
-        const checkoutModal = new bootstrap.Modal(document.getElementById('checkoutModal'));
-        const submitLoginBtn = document.getElementById('submitLoginBtn');
-        const submitRegisterBtn = document.getElementById('submitRegisterBtn');
-        const googleLoginBtn = document.getElementById('googleLoginBtn');
-        const appleLoginBtn = document.getElementById('appleLoginBtn');
-        const switchToRegisterLink = document.getElementById('switchToRegisterLink');
-        const switchToLoginLink = document.getElementById('switchToLoginLink');
-        const forgotPasswordLink = document.getElementById('forgotPasswordLink');
-        const submitResetBtn = document.getElementById('submitResetBtn');
-        const addToCartBtn = document.getElementById('addToCartBtn');
-        const checkoutBtn = document.getElementById('checkoutBtn');
-        const submitOrderBtn = document.getElementById('submitOrderBtn');
-        const checkoutPayment = document.getElementById('checkoutPayment');
-        const creditCardFields = document.getElementById('creditCardFields');
+                // Now that Firebase is initialized, set up the rest of the app
+                setupApp(auth, db);
+            } catch (error) {
+                console.error('Firebase initialization error:', error);
+                document.getElementById('firebaseInitError').textContent = 
+                    'Error initializing Firebase: ' + error.message;
+                document.getElementById('firebaseInitError').style.display = 'block';
+                document.body.style.cursor = 'default';
+            }
+        });
 
-        // Global variables
-        let currentUser = null;
-        let isAdmin = false;
-        let images = [];
-        let currentImage = null;
-        let cart = [];
-        let cartId = null;
+        function setupApp(auth, db) {
+            // DOM Elements
+            const loginBtn = document.getElementById('loginBtn');
+            const registerBtn = document.getElementById('registerBtn');
+            const logoutBtn = document.getElementById('logoutBtn');
+            const authButtons = document.getElementById('authButtons');
+            const userDropdown = document.getElementById('userDropdown');
+            const userName = document.getElementById('userName');
+            const adminControls = document.getElementById('adminControls');
+            const adminLink = document.getElementById('adminLink');
+            const cartIcon = document.getElementById('cartIcon');
+            const cartCount = document.getElementById('cartCount');
+            const galleryContainer = document.getElementById('galleryContainer');
+            const searchInput = document.getElementById('searchInput');
+            const searchBtn = document.getElementById('searchBtn');
+            const sortSelect = document.getElementById('sortSelect');
+            const imageUrl = document.getElementById('imageUrl');
+            const previewImageBtn = document.getElementById('previewImageBtn');
+            const imagePreview = document.getElementById('imagePreview');
+            const imagePreviewContainer = document.getElementById('imagePreviewContainer');
+            const imageTitle = document.getElementById('imageTitle');
+            const imageDescription = document.getElementById('imageDescription');
+            const digitalPrice = document.getElementById('digitalPrice');
+            const physicalPrice = document.getElementById('physicalPrice');
+            const imageTags = document.getElementById('imageTags');
+            const uploadImageBtn = document.getElementById('uploadImageBtn');
+            const loginModal = new bootstrap.Modal(document.getElementById('loginModal'));
+            const registerModal = new bootstrap.Modal(document.getElementById('registerModal'));
+            const forgotPasswordModal = new bootstrap.Modal(document.getElementById('forgotPasswordModal'));
+            const imageModal = new bootstrap.Modal(document.getElementById('imageModal'));
+            const cartModal = new bootstrap.Modal(document.getElementById('cartModal'));
+            const checkoutModal = new bootstrap.Modal(document.getElementById('checkoutModal'));
+            const submitLoginBtn = document.getElementById('submitLoginBtn');
+            const submitRegisterBtn = document.getElementById('submitRegisterBtn');
+            const googleLoginBtn = document.getElementById('googleLoginBtn');
+            const appleLoginBtn = document.getElementById('appleLoginBtn');
+            const switchToRegisterLink = document.getElementById('switchToRegisterLink');
+            const switchToLoginLink = document.getElementById('switchToLoginLink');
+            const forgotPasswordLink = document.getElementById('forgotPasswordLink');
+            const submitResetBtn = document.getElementById('submitResetBtn');
+            const addToCartBtn = document.getElementById('addToCartBtn');
+            const checkoutBtn = document.getElementById('checkoutBtn');
+            const submitOrderBtn = document.getElementById('submitOrderBtn');
+            const checkoutPayment = document.getElementById('checkoutPayment');
+            const creditCardFields = document.getElementById('creditCardFields');
+            const userSearch = document.getElementById('userSearch');
+            const usersTableBody = document.getElementById('usersTableBody');
 
-        // Initialize the app
-        document.addEventListener('DOMContentLoaded', () => {
+            // Global variables
+            let currentUser = null;
+            let isAdmin = false;
+            let images = [];
+            let currentImage = null;
+            let cart = [];
+            let cartId = null;
+            let users = [];
+
             // Check auth state
-            onAuthStateChanged(auth, (user) => {
+            auth.onAuthStateChanged((user) => {
+                document.body.style.cursor = 'default';
+                
                 if (user) {
                     currentUser = user;
                     authButtons.classList.add('hidden');
@@ -629,6 +740,11 @@
                     
                     // Load user's cart
                     loadUserCart(user.uid);
+                    
+                    // Load users if admin
+                    if (isAdmin) {
+                        loadUsers();
+                    }
                 } else {
                     currentUser = null;
                     authButtons.classList.remove('hidden');
@@ -643,10 +759,10 @@
                         updateCartCount();
                     }
                 }
+                
+                // Load images
+                loadImages();
             });
-
-            // Load images
-            loadImages();
 
             // Event listeners
             loginBtn.addEventListener('click', () => {
@@ -659,7 +775,7 @@
             });
 
             logoutBtn.addEventListener('click', () => {
-                signOut(auth).then(() => {
+                auth.signOut().then(() => {
                     // Preserve guest cart if exists
                     const guestCart = localStorage.getItem('guestCart');
                     if (guestCart) {
@@ -674,11 +790,21 @@
                 });
             });
 
+            previewImageBtn.addEventListener('click', () => {
+                const url = imageUrl.value.trim();
+                if (url) {
+                    imagePreview.src = url;
+                    imagePreviewContainer.classList.remove('hidden');
+                } else {
+                    alert('Please enter a valid image URL');
+                }
+            });
+
             submitLoginBtn.addEventListener('click', () => {
                 const email = document.getElementById('loginEmail').value;
                 const password = document.getElementById('loginPassword').value;
                 
-                signInWithEmailAndPassword(auth, email, password)
+                auth.signInWithEmailAndPassword(email, password)
                     .then(() => {
                         loginModal.hide();
                     })
@@ -698,15 +824,15 @@
                     return;
                 }
                 
-                createUserWithEmailAndPassword(auth, email, password)
+                auth.createUserWithEmailAndPassword(email, password)
                     .then((userCredential) => {
                         // Add user to Firestore
-                        return setDoc(doc(db, 'users', userCredential.user.uid), {
+                        return db.collection('users').doc(userCredential.user.uid).set({
                             name: name,
                             email: email,
-                            createdAt: serverTimestamp(),
+                            createdAt: firebase.firestore.FieldValue.serverTimestamp(),
                             isAdmin: false
-                        };
+                        });
                     })
                     .then(() => {
                         registerModal.hide();
@@ -717,8 +843,23 @@
             });
 
             googleLoginBtn.addEventListener('click', () => {
-                const provider = new GoogleAuthProvider();
-                signInWithPopup(auth, provider)
+                const provider = new firebase.auth.GoogleAuthProvider();
+                auth.signInWithPopup(provider)
+                    .then((result) => {
+                        // Check if user exists in Firestore
+                        return db.collection('users').doc(result.user.uid).get();
+                    })
+                    .then((doc) => {
+                        if (!doc.exists) {
+                            // Add new user to Firestore
+                            return db.collection('users').doc(result.user.uid).set({
+                                name: result.user.displayName,
+                                email: result.user.email,
+                                createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                                isAdmin: false
+                            });
+                        }
+                    })
                     .then(() => {
                         loginModal.hide();
                     })
@@ -728,12 +869,26 @@
             });
 
             appleLoginBtn.addEventListener('click', () => {
-                const provider = new OAuthProvider('apple.com');
-                signInWithPopup(auth, provider)
+                const provider = new firebase.auth.OAuthProvider('apple.com');
+                auth.signInWithPopup(provider)
+                    .then((result) => {
+                        // Check if user exists in Firestore
+                        return db.collection('users').doc(result.user.uid).get();
+                    })
+                    .then((doc) => {
+                        if (!doc.exists) {
+                            // Add new user to Firestore
+                            return db.collection('users').doc(result.user.uid).set({
+                                name: result.user.displayName || result.user.email,
+                                email: result.user.email,
+                                createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                                isAdmin: false
+                            });
+                        }
+                    })
                     .then(() => {
                         loginModal.hide();
-                    })
-                    .catch((error) => {
+                    })                    .catch((error) => {
                         alert(error.message);
                     });
             });
@@ -759,7 +914,7 @@
             submitResetBtn.addEventListener('click', () => {
                 const email = document.getElementById('resetEmail').value;
                 
-                sendPasswordResetEmail(auth, email)
+                auth.sendPasswordResetEmail(email)
                     .then(() => {
                         alert('Password reset email sent!');
                         forgotPasswordModal.hide();
@@ -770,7 +925,7 @@
             });
 
             uploadImageBtn.addEventListener('click', () => {
-                uploadImage();
+                addImageWithUrl();
             });
 
             cartIcon.addEventListener('click', () => {
@@ -795,409 +950,528 @@
             submitOrderBtn.addEventListener('click', () => {
                 completePurchase();
             });
-        });
 
-        // Check if user is admin
-        async function checkAdminStatus(uid) {
-            const userDoc = await getDoc(doc(db, 'users', uid));
-            if (userDoc.exists()) {
-                isAdmin = userDoc.data().isAdmin || false;
-                if (isAdmin) {
+            userSearch.addEventListener('input', () => {
+                filterUsers();
+            });
+
+            adminLink.addEventListener('click', (e) => {
+                e.preventDefault();
+                // Show admin controls if hidden
+                if (adminControls.classList.contains('hidden')) {
                     adminControls.classList.remove('hidden');
-                    adminLink.classList.remove('hidden');
-                } else {
-                    adminControls.classList.add('hidden');
-                    adminLink.classList.add('hidden');
+                    // Load users if not already loaded
+                    if (isAdmin && users.length === 0) {
+                        loadUsers();
+                    }
+                }
+            });
+
+            // Add image using URL instead of file upload
+            async function addImageWithUrl() {
+                const url = imageUrl.value.trim();
+                if (!url) {
+                    alert('Please enter an image URL');
+                    return;
+                }
+                
+                if (!imageTitle.value) {
+                    alert('Please enter a title');
+                    return;
+                }
+                
+                if (!digitalPrice.value || !physicalPrice.value) {
+                    alert('Please set both digital and physical prices');
+                    return;
+                }
+                
+                // Show loading state
+                uploadImageBtn.disabled = true;
+                uploadImageBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Adding...';
+                
+                try {
+                    // Prepare image data
+                    const imageData = {
+                        title: imageTitle.value,
+                        description: imageDescription.value,
+                        tags: imageTags.value.split(',').map(tag => tag.trim()),
+                        digitalPrice: parseFloat(digitalPrice.value),
+                        physicalPrice: parseFloat(physicalPrice.value),
+                        imageUrl: url,
+                        thumbnailUrl: url, // Using same URL for thumbnail
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                        uploadedBy: currentUser.uid
+                    };
+                    
+                    // Add to Firestore
+                    await db.collection('images').add(imageData);
+                    
+                    // Show success message
+                    alert('Image added successfully!');
+                    
+                    // Reset form
+                    resetImageForm();
+                    
+                    // Reload images
+                    loadImages();
+                } catch (error) {
+                    console.error('Error adding image:', error);
+                    alert('Error adding image: ' + error.message);
+                    resetImageForm();
                 }
             }
-        }
 
-        // Load images from Firestore
-        async function loadImages() {
-            galleryContainer.innerHTML = '<div class="col-12 text-center"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div></div>';
-            
-            try {
-                const q = query(collection(db, 'images'), orderBy('createdAt', 'desc'));
-                const querySnapshot = await getDocs(q);
-                images = [];
-                
-                querySnapshot.forEach((doc) => {
-                    images.push({ id: doc.id, ...doc.data() });
-                });
-                
-                displayImages(images);
-            } catch (error) {
-                console.error('Error loading images:', error);
-                galleryContainer.innerHTML = '<div class="col-12 text-center text-danger">Error loading images. Please try again later.</div>';
-            }
-        }
-
-        // Display images in gallery
-        function displayImages(imagesToDisplay) {
-            galleryContainer.innerHTML = '';
-            
-            if (imagesToDisplay.length === 0) {
-                galleryContainer.innerHTML = '<div class="col-12 text-center">No images found.</div>';
-                return;
-            }
-            
-            imagesToDisplay.forEach(image => {
-                const col = document.createElement('div');
-                col.className = 'col-md-4 col-lg-3';
-                
-                col.innerHTML = `
-                    <div class="card h-100">
-                        <div class="image-container">
-                            <img src="${image.thumbnailUrl || image.imageUrl}" alt="${image.title}" class="card-img-top">
-                        </div>
-                        <div class="card-body">
-                            <h5 class="card-title">${image.title}</h5>
-                            <p class="card-text text-muted">${image.description.substring(0, 50)}${image.description.length > 50 ? '...' : ''}</p>
-                            <div class="d-flex justify-content-between align-items-center">
-                                <span class="badge price-badge">$${image.digitalPrice}</span>
-                                <button class="btn btn-sm btn-outline-primary view-image-btn" data-id="${image.id}">View</button>
-                            </div>
-                        </div>
-                    </div>
-                `;
-                
-                galleryContainer.appendChild(col);
-            });
-            
-            // Add event listeners to view buttons
-            document.querySelectorAll('.view-image-btn').forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    const imageId = e.target.getAttribute('data-id');
-                    viewImage(imageId);
-                });
-            });
-        }
-
-        // View image details
-        async function viewImage(imageId) {
-            currentImage = images.find(img => img.id === imageId);
-            
-            if (!currentImage) return;
-            
-            document.getElementById('imageModalTitle').textContent = currentImage.title;
-            document.getElementById('modalImage').src = currentImage.imageUrl;
-            document.getElementById('imageModalDescription').textContent = currentImage.description;
-            document.getElementById('imageModalTags').textContent = currentImage.tags.join(', ');
-            document.getElementById('digitalPriceDisplay').textContent = currentImage.digitalPrice;
-            document.getElementById('physicalPriceDisplay').textContent = currentImage.physicalPrice;
-            
-            imageModal.show();
-            
-            // Add to cart button event listener
-            addToCartBtn.onclick = () => {
-                const purchaseOption = document.querySelector('input[name="purchaseOption"]:checked').value;
-                const price = purchaseOption === 'digital' ? currentImage.digitalPrice : currentImage.physicalPrice;
-                
-                addToCart(currentImage.id, currentImage.title, purchaseOption, price, currentImage.imageUrl);
-                imageModal.hide();
-            };
-        }
-
-        // Upload image to storage and Firestore
-        async function uploadImage() {
-            const file = imageUpload.files[0];
-            if (!file) {
-                alert('Please select an image file');
-                return;
-            }
-            
-            if (!imageTitle.value) {
-                alert('Please enter a title');
-                return;
-            }
-            
-            if (!digitalPrice.value || !physicalPrice.value) {
-                alert('Please set both digital and physical prices');
-                return;
-            }
-            
-            uploadImageBtn.disabled = true;
-            uploadImageBtn.textContent = 'Uploading...';
-            
-            try {
-                // Upload image to storage
-                const storageRef = ref(storage, `images/${file.name}`);
-                const snapshot = await uploadBytes(storageRef, file);
-                const imageUrl = await getDownloadURL(snapshot.ref);
-                
-                // Create thumbnail (in a real app, you'd create an actual thumbnail)
-                const thumbnailUrl = imageUrl;
-                
-                // Add image data to Firestore
-                const imageData = {
-                    title: imageTitle.value,
-                    description: imageDescription.value,
-                    tags: imageTags.value.split(',').map(tag => tag.trim()),
-                    digitalPrice: parseFloat(digitalPrice.value),
-                    physicalPrice: parseFloat(physicalPrice.value),
-                    imageUrl: imageUrl,
-                    thumbnailUrl: thumbnailUrl,
-                    createdAt: serverTimestamp(),
-                    uploadedBy: currentUser.uid
-                };
-                
-                await addDoc(collection(db, 'images'), imageData);
-                
-                // Reset form
-                imageUpload.value = '';
+            function resetImageForm() {
+                imageUrl.value = '';
                 imageTitle.value = '';
                 imageDescription.value = '';
                 digitalPrice.value = '';
                 physicalPrice.value = '';
                 imageTags.value = '';
-                
-                // Reload images
-                loadImages();
-                
-                alert('Image uploaded successfully!');
-            } catch (error) {
-                console.error('Error uploading image:', error);
-                alert('Error uploading image. Please try again.');
-            } finally {
+                imagePreviewContainer.classList.add('hidden');
                 uploadImageBtn.disabled = false;
-                uploadImageBtn.textContent = 'Upload Image';
+                uploadImageBtn.textContent = 'Add Image';
             }
-        }
 
-        // Add item to cart
-        function addToCart(imageId, title, type, price, imageUrl) {
-            const existingItem = cart.find(item => item.imageId === imageId && item.type === type);
-            
-            if (existingItem) {
-                existingItem.quantity += 1;
-            } else {
-                cart.push({
-                    imageId,
-                    title,
-                    type,
-                    price,
-                    imageUrl,
-                    quantity: 1
-                });
-            }
-            
-            updateCartCount();
-            saveCart();
-        }
-
-        // Update cart count display
-        function updateCartCount() {
-            const count = cart.reduce((total, item) => total + item.quantity, 0);
-            cartCount.textContent = count;
-        }
-
-        // Save cart to Firestore (for logged in users) or localStorage (for guests)
-        async function saveCart() {
-            if (currentUser) {
-                // Save to Firestore
-                if (!cartId) {
-                    // Create new cart document if it doesn't exist
-                    const docRef = await addDoc(collection(db, 'carts'), {
-                        userId: currentUser.uid,
-                        items: cart,
-                        updatedAt: serverTimestamp()
-                    });
-                    cartId = docRef.id;
-                } else {
-                    // Update existing cart
-                    await updateDoc(doc(db, 'carts', cartId), {
-                        items: cart,
-                        updatedAt: serverTimestamp()
-                    });
-                }
-            } else {
-                // Save to localStorage
-                localStorage.setItem('guestCart', JSON.stringify(cart));
-            }
-        }
-
-        // Load user's cart from Firestore
-        async function loadUserCart(userId) {
-            try {
-                const q = query(collection(db, 'carts'), where('userId', '==', userId));
-                const querySnapshot = await getDocs(q);
-                
-                if (!querySnapshot.empty) {
-                    const cartDoc = querySnapshot.docs[0];
-                    cartId = cartDoc.id;
-                    cart = cartDoc.data().items || [];
-                    updateCartCount();
-                }
-            } catch (error) {
-                console.error('Error loading cart:', error);
-            }
-        }
-
-        // Display cart items in modal
-        function displayCart() {
-            const container = document.getElementById('cartItemsContainer');
-            
-            if (cart.length === 0) {
-                container.innerHTML = '<p class="text-center">Your cart is empty</p>';
-                document.getElementById('cartTotal').textContent = '$0.00';
-                checkoutBtn.disabled = true;
-                return;
-            }
-            
-            let html = '';
-            let total = 0;
-            
-            cart.forEach((item, index) => {
-                const itemTotal = item.price * item.quantity;
-                total += itemTotal;
-                
-                html += `
-                    <div class="d-flex mb-3">
-                        <img src="${item.imageUrl}" alt="${item.title}" style="width: 80px; height: 80px; object-fit: cover;" class="rounded me-3">
-                        <div class="flex-grow-1">
-                            <h6>${item.title}</h6>
-                            <small class="text-muted">${item.type === 'digital' ? 'Digital Rights' : 'Framed Print'}</small>
-                            <div class="d-flex justify-content-between align-items-center mt-2">
-                                <div class="input-group" style="width: 120px;">
-                                    <button class="btn btn-outline-secondary btn-sm decrease-quantity" type="button" data-index="${index}">-</button>
-                                    <input type="text" class="form-control form-control-sm text-center quantity-input" value="${item.quantity}" readonly>
-                                    <button class="btn btn-outline-secondary btn-sm increase-quantity" type="button" data-index="${index}">+</button>
-                                </div>
-                                <span>$${itemTotal.toFixed(2)}</span>
-                            </div>
-                        </div>
-                        <button class="btn btn-outline-danger btn-sm remove-item" data-index="${index}">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                    </div>
-                `;
-            });
-            
-            container.innerHTML = html;
-            document.getElementById('cartTotal').textContent = `$${total.toFixed(2)}`;
-            checkoutBtn.disabled = false;
-            
-            // Add event listeners to quantity buttons
-            document.querySelectorAll('.increase-quantity').forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    const index = e.target.getAttribute('data-index');
-                    cart[index].quantity += 1;
-                    displayCart();
-                    saveCart();
-                });
-            });
-            
-            document.querySelectorAll('.decrease-quantity').forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    const index = e.target.getAttribute('data-index');
-                    if (cart[index].quantity > 1) {
-                        cart[index].quantity -= 1;
-                    } else {
-                        cart.splice(index, 1);
+            // Check if user is admin
+            async function checkAdminStatus(uid) {
+                try {
+                    const userDoc = await db.collection('users').doc(uid).get();
+                    if (userDoc.exists) {
+                        isAdmin = userDoc.data().isAdmin || false;
+                        if (isAdmin) {
+                            adminControls.classList.remove('hidden');
+                            adminLink.classList.remove('hidden');
+                        } else {
+                            adminControls.classList.add('hidden');
+                            adminLink.classList.add('hidden');
+                        }
                     }
-                    displayCart();
-                    saveCart();
-                });
-            });
-            
-            document.querySelectorAll('.remove-item').forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    const index = e.target.getAttribute('data-index');
-                    cart.splice(index, 1);
-                    displayCart();
-                    saveCart();
-                });
-            });
-        }
-
-        // Display checkout form
-        function displayCheckout() {
-            const checkoutForm = document.getElementById('checkoutForm');
-            const checkoutSuccess = document.getElementById('checkoutSuccess');
-            
-            checkoutForm.classList.remove('hidden');
-            checkoutSuccess.classList.add('hidden');
-            
-            // Calculate total
-            const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-            document.getElementById('checkoutTotal').textContent = `$${total.toFixed(2)}`;
-            
-            // Pre-fill user info if logged in
-            if (currentUser) {
-                document.getElementById('checkoutName').value = currentUser.displayName || '';
-                document.getElementById('checkoutEmail').value = currentUser.email || '';
+                } catch (error) {
+                    console.error('Error checking admin status:', error);
+                }
             }
-        }
 
-        // Complete purchase
-        async function completePurchase() {
-            const name = document.getElementById('checkoutName').value;
-            const email = document.getElementById('checkoutEmail').value;
-            const address = document.getElementById('checkoutAddress').value;
-            const paymentMethod = document.getElementById('checkoutPayment').value;
-            
-            if (!name || !email || !address || !paymentMethod) {
-                alert('Please fill in all required fields');
-                return;
+            // Load users from Firestore (for admin)
+            async function loadUsers() {
+                try {
+                    const querySnapshot = await db.collection('users').get();
+                    users = [];
+                    
+                    querySnapshot.forEach((doc) => {
+                        users.push({ id: doc.id, ...doc.data() });
+                    });
+                    
+                    displayUsers(users);
+                } catch (error) {
+                    console.error('Error loading users:', error);
+                    alert('Error loading users. Please try again.');
+                }
             }
-            
-            if (paymentMethod === 'credit') {
-                const cardNumber = document.getElementById('cardNumber').value;
-                const cardExpiry = document.getElementById('cardExpiry').value;
-                const cardCvc = document.getElementById('cardCvc').value;
+
+            // Display users in admin panel
+            function displayUsers(usersToDisplay) {
+                usersTableBody.innerHTML = '';
                 
-                if (!cardNumber || !cardExpiry || !cardCvc) {
-                    alert('Please fill in all credit card details');
+                if (usersToDisplay.length === 0) {
+                    usersTableBody.innerHTML = '<tr><td colspan="4" class="text-center">No users found</td></tr>';
                     return;
                 }
+                
+                usersToDisplay.forEach(user => {
+                    const row = document.createElement('tr');
+                    
+                    row.innerHTML = `
+                        <td>${user.name || 'N/A'}</td>
+                        <td>${user.email}</td>
+                        <td>
+                            <span class="${user.isAdmin ? 'admin-badge' : 'user-badge'}">
+                                ${user.isAdmin ? 'Admin' : 'User'}
+                            </span>
+                        </td>
+                        <td>
+                            ${user.id !== currentUser.uid ? 
+                                `<button class="btn btn-sm ${user.isAdmin ? 'btn-warning' : 'btn-success'} toggle-admin-btn" 
+                                    data-userid="${user.id}" data-isadmin="${user.isAdmin}">
+                                    ${user.isAdmin ? 'Remove Admin' : 'Make Admin'}
+                                </button>` : 
+                                '<span class="text-muted">Current User</span>'}
+                        </td>
+                    `;
+                    
+                    usersTableBody.appendChild(row);
+                });
+                
+                // Add event listeners to toggle admin buttons
+                document.querySelectorAll('.toggle-admin-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        const userId = e.target.getAttribute('data-userid');
+                        const isAdmin = e.target.getAttribute('data-isadmin') === 'true';
+                        toggleAdminStatus(userId, !isAdmin);
+                    });
+                });
             }
-            
-            submitOrderBtn.disabled = true;
-            submitOrderBtn.textContent = 'Processing...';
-            
-            try {
-                // In a real app, you would process payment here
-                // For this demo, we'll just simulate a successful payment
+
+            // Filter users based on search input
+            function filterUsers() {
+                const searchTerm = userSearch.value.toLowerCase();
+                const filteredUsers = users.filter(user => 
+                    (user.name && user.name.toLowerCase().includes(searchTerm)) || 
+                    user.email.toLowerCase().includes(searchTerm)
+                );
+                displayUsers(filteredUsers);
+            }
+
+            // Toggle admin status for a user
+            async function toggleAdminStatus(userId, makeAdmin) {
+                if (!confirm(`Are you sure you want to ${makeAdmin ? 'make this user an admin' : 'remove admin privileges from this user'}?`)) {
+                    return;
+                }
                 
-                // Create order in Firestore
-                const orderData = {
-                    userId: currentUser ? currentUser.uid : null,
-                    userName: name,
-                    userEmail: email,
-                    shippingAddress: address,
-                    paymentMethod: paymentMethod,
-                    items: cart,
-                    total: cart.reduce((sum, item) => sum + (item.price * item.quantity), 0),
-                    status: 'completed',
-                    createdAt: serverTimestamp()
+                try {
+                    await db.collection('users').doc(userId).update({
+                        isAdmin: makeAdmin
+                    });
+                    
+                    // Update local users array
+                    const userIndex = users.findIndex(u => u.id === userId);
+                    if (userIndex !== -1) {
+                        users[userIndex].isAdmin = makeAdmin;
+                    }
+                    
+                    // Refresh display
+                    displayUsers(users);
+                    
+                    // If the current user's admin status was changed, reload the page
+                    if (userId === currentUser.uid) {
+                        alert('Your admin status has been changed. The page will reload.');
+                        location.reload();
+                    }
+                } catch (error) {
+                    console.error('Error updating admin status:', error);
+                    alert('Error updating admin status. Please try again.');
+                }
+            }
+
+            // Load images from Firestore
+            async function loadImages() {
+                galleryContainer.innerHTML = '<div class="col-12 text-center"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div></div>';
+                
+                try {
+                    const querySnapshot = await db.collection('images').orderBy('createdAt', 'desc').get();
+                    images = [];
+                    
+                    querySnapshot.forEach((doc) => {
+                        images.push({ id: doc.id, ...doc.data() });
+                    });
+                    
+                    displayImages(images);
+                } catch (error) {
+                    console.error('Error loading images:', error);
+                    galleryContainer.innerHTML = '<div class="col-12 text-center text-danger">Error loading images. Please try again later.</div>';
+                }
+            }
+
+            // Display images in gallery
+            function displayImages(imagesToDisplay) {
+                galleryContainer.innerHTML = '';
+                
+                if (imagesToDisplay.length === 0) {
+                    galleryContainer.innerHTML = '<div class="col-12 text-center">No images found.</div>';
+                    return;
+                }
+                
+                imagesToDisplay.forEach(image => {
+                    const col = document.createElement('div');
+                    col.className = 'col-md-4 col-lg-3';
+                    
+                    col.innerHTML = `
+                        <div class="card h-100">
+                            <div class="image-container">
+                                <img src="${image.thumbnailUrl || image.imageUrl}" alt="${image.title}" class="card-img-top">
+                            </div>
+                            <div class="card-body">
+                                <h5 class="card-title">${image.title}</h5>
+                                <p class="card-text text-muted">${image.description.substring(0, 50)}${image.description.length > 50 ? '...' : ''}</p>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span class="badge price-badge">$${image.digitalPrice}</span>
+                                    <button class="btn btn-sm btn-outline-primary view-image-btn" data-id="${image.id}">View</button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    
+                    galleryContainer.appendChild(col);
+                });
+                
+                // Add event listeners to view buttons
+                document.querySelectorAll('.view-image-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        const imageId = e.target.getAttribute('data-id');
+                        viewImage(imageId);
+                    });
+                });
+            }
+
+            // View image details
+            async function viewImage(imageId) {
+                currentImage = images.find(img => img.id === imageId);
+                
+                if (!currentImage) return;
+                
+                document.getElementById('imageModalTitle').textContent = currentImage.title;
+                document.getElementById('modalImage').src = currentImage.imageUrl;
+                document.getElementById('imageModalDescription').textContent = currentImage.description;
+                document.getElementById('imageModalTags').textContent = currentImage.tags.join(', ');
+                document.getElementById('digitalPriceDisplay').textContent = currentImage.digitalPrice;
+                document.getElementById('physicalPriceDisplay').textContent = currentImage.physicalPrice;
+                
+                imageModal.show();
+                
+                // Add to cart button event listener
+                addToCartBtn.onclick = () => {
+                    const purchaseOption = document.querySelector('input[name="purchaseOption"]:checked').value;
+                    const price = purchaseOption === 'digital' ? currentImage.digitalPrice : currentImage.physicalPrice;
+                    
+                    addToCart(currentImage.id, currentImage.title, purchaseOption, price, currentImage.imageUrl);
+                    imageModal.hide();
                 };
+            }
+
+            // Add item to cart
+            function addToCart(imageId, title, type, price, imageUrl) {
+                const existingItem = cart.find(item => item.imageId === imageId && item.type === type);
                 
-                await addDoc(collection(db, 'orders'), orderData);
+                if (existingItem) {
+                    existingItem.quantity += 1;
+                } else {
+                    cart.push({
+                        imageId,
+                        title,
+                        type,
+                        price,
+                        imageUrl,
+                        quantity: 1
+                    });
+                }
                 
-                // Clear cart
-                cart = [];
                 updateCartCount();
                 saveCart();
+            }
+
+            // Update cart count display
+            function updateCartCount() {
+                const count = cart.reduce((total, item) => total + item.quantity, 0);
+                cartCount.textContent = count;
+            }
+
+            // Save cart to Firestore (for logged in users) or localStorage (for guests)
+            async function saveCart() {
+                if (currentUser) {
+                    // Save to Firestore
+                    if (!cartId) {
+                        // Create new cart document if it doesn't exist
+                        const docRef = await db.collection('carts').add({
+                            userId: currentUser.uid,
+                            items: cart,
+                            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                        });
+                        cartId = docRef.id;
+                    } else {
+                        // Update existing cart
+                        await db.collection('carts').doc(cartId).update({
+                            items: cart,
+                            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                        });
+                    }
+                } else {
+                    // Save to localStorage
+                    localStorage.setItem('guestCart', JSON.stringify(cart));
+                }
+            }
+
+            // Load user's cart from Firestore
+            async function loadUserCart(userId) {
+                try {
+                    const querySnapshot = await db.collection('carts').where('userId', '==', userId).get();
+                    
+                    if (!querySnapshot.empty) {
+                        const cartDoc = querySnapshot.docs[0];
+                        cartId = cartDoc.id;
+                        cart = cartDoc.data().items || [];
+                        updateCartCount();
+                    }
+                } catch (error) {
+                    console.error('Error loading cart:', error);
+                }
+            }
+
+            // Display cart items in modal
+            function displayCart() {
+                const container = document.getElementById('cartItemsContainer');
                 
-                // Show success message
-                document.getElementById('checkoutForm').classList.add('hidden');
-                document.getElementById('checkoutSuccess').classList.remove('hidden');
-                document.getElementById('confirmationEmail').textContent = email;
+                if (cart.length === 0) {
+                    container.innerHTML = '<p class="text-center">Your cart is empty</p>';
+                    document.getElementById('cartTotal').textContent = '$0.00';
+                    checkoutBtn.disabled = true;
+                    return;
+                }
                 
-                // Reset checkout form
-                document.getElementById('checkoutName').value = '';
-                document.getElementById('checkoutEmail').value = '';
-                document.getElementById('checkoutAddress').value = '';
-                document.getElementById('checkoutPayment').value = '';
-                document.getElementById('cardNumber').value = '';
-                document.getElementById('cardExpiry').value = '';
-                document.getElementById('cardCvc').value = '';
-            } catch (error) {
-                console.error('Error completing purchase:', error);
-                alert('Error completing purchase. Please try again.');
-            } finally {
-                submitOrderBtn.disabled = false;
-                submitOrderBtn.textContent = 'Complete Purchase';
+                let html = '';
+                let total = 0;
+                
+                cart.forEach((item, index) => {
+                    const itemTotal = item.price * item.quantity;
+                    total += itemTotal;
+                    
+                    html += `
+                        <div class="d-flex mb-3">
+                            <img src="${item.imageUrl}" alt="${item.title}" style="width: 80px; height: 80px; object-fit: cover;" class="rounded me-3">
+                            <div class="flex-grow-1">
+                                <h6>${item.title}</h6>
+                                <small class="text-muted">${item.type === 'digital' ? 'Digital Rights' : 'Framed Print'}</small>
+                                <div class="d-flex justify-content-between align-items-center mt-2">
+                                    <div class="input-group" style="width: 120px;">
+                                        <button class="btn btn-outline-secondary btn-sm decrease-quantity" type="button" data-index="${index}">-</button>
+                                        <input type="text" class="form-control form-control-sm text-center quantity-input" value="${item.quantity}" readonly>
+                                        <button class="btn btn-outline-secondary btn-sm increase-quantity" type="button" data-index="${index}">+</button>
+                                    </div>
+                                    <span>$${itemTotal.toFixed(2)}</span>
+                                </div>
+                            </div>
+                            <button class="btn btn-outline-danger btn-sm remove-item" data-index="${index}">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    `;
+                });
+                
+                container.innerHTML = html;
+                document.getElementById('cartTotal').textContent = `$${total.toFixed(2)}`;
+                checkoutBtn.disabled = false;
+                
+                // Add event listeners to quantity buttons
+                document.querySelectorAll('.increase-quantity').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        const index = e.target.getAttribute('data-index');
+                        cart[index].quantity += 1;
+                        displayCart();
+                        saveCart();
+                    });
+                });
+                
+                document.querySelectorAll('.decrease-quantity').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        const index = e.target.getAttribute('data-index');
+                        if (cart[index].quantity > 1) {
+                            cart[index].quantity -= 1;
+                        } else {
+                            cart.splice(index, 1);
+                        }
+                        displayCart();
+                        saveCart();
+                    });
+                });
+                
+                document.querySelectorAll('.remove-item').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        const index = e.target.getAttribute('data-index');
+                        cart.splice(index, 1);
+                        displayCart();
+                        saveCart();
+                    });
+                });
+            }
+
+            // Display checkout form
+            function displayCheckout() {
+                const checkoutForm = document.getElementById('checkoutForm');
+                const checkoutSuccess = document.getElementById('checkoutSuccess');
+                
+                checkoutForm.classList.remove('hidden');
+                checkoutSuccess.classList.add('hidden');
+                
+                // Calculate total
+                const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+                document.getElementById('checkoutTotal').textContent = `$${total.toFixed(2)}`;
+                
+                // Pre-fill user info if logged in
+                if (currentUser) {
+                    document.getElementById('checkoutName').value = currentUser.displayName || '';
+                    document.getElementById('checkoutEmail').value = currentUser.email || '';
+                }
+            }
+
+            // Complete purchase
+            async function completePurchase() {
+                const name = document.getElementById('checkoutName').value;
+                const email = document.getElementById('checkoutEmail').value;
+                const address = document.getElementById('checkoutAddress').value;
+                const paymentMethod = document.getElementById('checkoutPayment').value;
+                
+                if (!name || !email || !address || !paymentMethod) {
+                    alert('Please fill in all required fields');
+                    return;
+                }
+                
+                if (paymentMethod === 'credit') {
+                    const cardNumber = document.getElementById('cardNumber').value;
+                    const cardExpiry = document.getElementById('cardExpiry').value;
+                    const cardCvc = document.getElementById('cardCvc').value;
+                    
+                    if (!cardNumber || !cardExpiry || !cardCvc) {
+                        alert('Please fill in all credit card details');
+                        return;
+                    }
+                }
+                
+                submitOrderBtn.disabled = true;
+                submitOrderBtn.textContent = 'Processing...';
+                
+                try {
+                    // In a real app, you would process payment here
+                    // For this demo, we'll just simulate a successful payment
+                    
+                    // Create order in Firestore
+                    const orderData = {
+                        userId: currentUser ? currentUser.uid : null,
+                        userName: name,
+                        userEmail: email,
+                        shippingAddress: address,
+                        paymentMethod: paymentMethod,
+                        items: cart,
+                        total: cart.reduce((sum, item) => sum + (item.price * item.quantity), 0),
+                        status: 'completed',
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                    };
+                    
+                    await db.collection('orders').add(orderData);
+                    
+                    // Clear cart
+                    cart = [];
+                    updateCartCount();
+                    saveCart();
+                    
+                    // Show success message
+                    document.getElementById('checkoutForm').classList.add('hidden');
+                    document.getElementById('checkoutSuccess').classList.remove('hidden');
+                    document.getElementById('confirmationEmail').textContent = email;
+                    
+                    // Reset checkout form
+                    document.getElementById('checkoutName').value = '';
+                    document.getElementById('checkoutEmail').value = '';
+                    document.getElementById('checkoutAddress').value = '';
+                    document.getElementById('checkoutPayment').value = '';
+                    document.getElementById('cardNumber').value = '';
+                    document.getElementById('cardExpiry').value = '';
+                    document.getElementById('cardCvc').value = '';
+                } catch (error) {
+                    console.error('Error completing purchase:', error);
+                    alert('Error completing purchase. Please try again.');
+                } finally {
+                    submitOrderBtn.disabled = false;
+                    submitOrderBtn.textContent = 'Complete Purchase';
+                }
             }
         }
     </script>
