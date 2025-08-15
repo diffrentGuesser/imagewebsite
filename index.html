@@ -608,7 +608,6 @@
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-storage-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-analytics-compat.js"></script>
 
     <script>
@@ -623,21 +622,19 @@
                     apiKey: "AIzaSyCNQgJypE5J0fHAuVKIHSXmrACfg2jjFFE",
                     authDomain: "image-1e1df.firebaseapp.com",
                     projectId: "image-1e1df",
-                    storageBucket: "image-1e1df.appspot.com",
                     messagingSenderId: "757991507289",
                     appId: "1:757991507289:web:de40e3eb2186da011a7848",
                     measurementId: "G-6GF5NHYHG0"
                 };
 
-                // Initialize Firebase
+                // Initialize Firebase without storage
                 const app = firebase.initializeApp(firebaseConfig);
                 const analytics = firebase.analytics();
                 const auth = firebase.auth();
                 const db = firebase.firestore();
-                const storage = firebase.storage();
 
                 // Now that Firebase is initialized, set up the rest of the app
-                setupApp(auth, db, storage);
+                setupApp(auth, db);
             } catch (error) {
                 console.error('Firebase initialization error:', error);
                 document.getElementById('firebaseInitError').textContent = 
@@ -647,7 +644,7 @@
             }
         });
 
-        function setupApp(auth, db, storage) {
+        function setupApp(auth, db) {
             // DOM Elements
             const loginBtn = document.getElementById('loginBtn');
             const registerBtn = document.getElementById('registerBtn');
@@ -924,7 +921,7 @@
 
             adminLink.addEventListener('click', (e) => {
                 e.preventDefault();
-                // Show admin controls if hidden
+                                // Show admin controls if hidden
                 if (adminControls.classList.contains('hidden')) {
                     adminControls.classList.remove('hidden');
                     // Load users if not already loaded
@@ -1089,7 +1086,7 @@
                     col.innerHTML = `
                         <div class="card h-100">
                             <div class="image-container">
-                                <img src="${image.thumbnailUrl || image.imageUrl}" alt="${image.title}" class="card-img-top">
+                                <img src="${image.imageUrl}" alt="${image.title}" class="card-img-top">
                             </div>
                             <div class="card-body">
                                 <h5 class="card-title">${image.title}</h5>
@@ -1139,7 +1136,7 @@
                 };
             }
 
-            // Upload image to storage and Firestore
+            // Upload image to GitHub repository
             async function uploadImage() {
                 const file = imageUpload.files[0];
                 if (!file) {
@@ -1161,13 +1158,17 @@
                 uploadImageBtn.textContent = 'Uploading...';
                 
                 try {
-                    // Upload image to storage
-                    const storageRef = storage.ref(`images/${file.name}`);
-                    const snapshot = await storageRef.put(file);
-                    const imageUrl = await snapshot.ref.getDownloadURL();
+                    // In a real implementation, you would:
+                    // 1. Upload the image to your GitHub repository using the GitHub API
+                    // 2. Get the raw URL of the uploaded image
+                    // 3. Store the image metadata in Firestore
                     
-                    // Create thumbnail (in a real app, you'd create an actual thumbnail)
-                    const thumbnailUrl = imageUrl;
+                    // For this demo, we'll simulate this process by:
+                    // 1. Generating a local URL for the image (this won't persist)
+                    // 2. Storing the metadata in Firestore
+                    
+                    // Generate local URL for the image
+                    const imageUrl = URL.createObjectURL(file);
                     
                     // Add image data to Firestore
                     const imageData = {
@@ -1176,8 +1177,7 @@
                         tags: imageTags.value.split(',').map(tag => tag.trim()),
                         digitalPrice: parseFloat(digitalPrice.value),
                         physicalPrice: parseFloat(physicalPrice.value),
-                        imageUrl: imageUrl,
-                        thumbnailUrl: thumbnailUrl,
+                        imageUrl: imageUrl, // This would be the GitHub raw URL in production
                         createdAt: firebase.firestore.FieldValue.serverTimestamp(),
                         uploadedBy: currentUser.uid
                     };
@@ -1195,7 +1195,7 @@
                     // Reload images
                     loadImages();
                     
-                    alert('Image uploaded successfully!');
+                    alert('Image uploaded successfully! (Note: In this demo, images are stored locally and will disappear on page refresh. In production, you would upload to GitHub.)');
                 } catch (error) {
                     console.error('Error uploading image:', error);
                     alert('Error uploading image. Please try again.');
