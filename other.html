@@ -1,0 +1,1205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ArtFrame - Buy Image Rights & Prints</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #4a6fa5;
+            --secondary-color: #166088;
+            --accent-color: #4fc3f7;
+            --light-color: #f8f9fa;
+            --dark-color: #343a40;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f5f5f5;
+        }
+        
+        .navbar-brand {
+            font-weight: 700;
+            color: var(--primary-color);
+        }
+        
+        .hero-section {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            padding: 4rem 0;
+            margin-bottom: 2rem;
+        }
+        
+        .card {
+            transition: transform 0.3s, box-shadow 0.3s;
+            margin-bottom: 20px;
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+        }
+        
+        .image-container {
+            height: 250px;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: #f0f0f0;
+        }
+        
+        .image-container img {
+            max-height: 100%;
+            width: auto;
+            max-width: 100%;
+            object-fit: contain;
+        }
+        
+        .price-badge {
+            font-size: 1.2rem;
+            background-color: var(--accent-color);
+        }
+        
+        .cart-icon {
+            position: relative;
+        }
+        
+        .cart-count {
+            position: absolute;
+            top: -10px;
+            right: -10px;
+            background-color: red;
+            color: white;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+        }
+        
+        .admin-controls {
+            background-color: #f8f9fa;
+            border-radius: 5px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .hidden {
+            display: none !important;
+        }
+        
+        #loginModal .modal-body {
+            padding: 2rem;
+        }
+        
+        .auth-provider-btn {
+            width: 100%;
+            margin-bottom: 10px;
+            text-align: left;
+        }
+        
+        .auth-divider {
+            display: flex;
+            align-items: center;
+            margin: 20px 0;
+        }
+        
+        .auth-divider::before, .auth-divider::after {
+            content: "";
+            flex: 1;
+            border-bottom: 1px solid #dee2e6;
+        }
+        
+        .auth-divider-text {
+            padding: 0 10px;
+        }
+        
+        .form-floating label {
+            padding: 1rem 0.75rem;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-light sticky-top shadow-sm">
+        <div class="container">
+            <a class="navbar-brand" href="#">ArtFrame</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="#" id="homeLink">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" id="galleryLink">Gallery</a>
+                    </li>
+                </ul>
+                <div class="d-flex align-items-center">
+                    <div class="cart-icon me-3" id="cartIcon" style="cursor: pointer;">
+                        <i class="fas fa-shopping-cart fa-lg"></i>
+                        <span class="cart-count" id="cartCount">0</span>
+                    </div>
+                    <div id="authButtons">
+                        <button class="btn btn-outline-primary me-2" id="loginBtn">Login</button>
+                        <button class="btn btn-primary" id="registerBtn">Register</button>
+                    </div>
+                    <div id="userDropdown" class="dropdown hidden">
+                        <button class="btn btn-secondary dropdown-toggle" type="button" id="userMenu" data-bs-toggle="dropdown">
+                            <span id="userName"></span>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li><a class="dropdown-item" href="#" id="myAccountLink">My Account</a></li>
+                            <li><a class="dropdown-item" href="#" id="adminLink" class="hidden">Admin</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="#" id="logoutBtn">Logout</a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero-section text-center">
+        <div class="container">
+            <h1 class="display-4 fw-bold">Premium Images & Prints</h1>
+            <p class="lead">Purchase digital rights or high-quality framed prints from talented artists</p>
+        </div>
+    </section>
+
+    <!-- Main Content -->
+    <div class="container my-5">
+        <!-- Admin Controls (only visible to admins) -->
+        <div id="adminControls" class="admin-controls hidden">
+            <h3>Admin Panel</h3>
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label for="imageUpload" class="form-label">Upload New Image</label>
+                        <input class="form-control" type="file" id="imageUpload" accept="image/*">
+                    </div>
+                    <div class="mb-3">
+                        <label for="imageTitle" class="form-label">Image Title</label>
+                        <input type="text" class="form-control" id="imageTitle" placeholder="Enter image title">
+                    </div>
+                    <div class="mb-3">
+                        <label for="imageDescription" class="form-label">Description</label>
+                        <textarea class="form-control" id="imageDescription" rows="3"></textarea>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="digitalPrice" class="form-label">Digital Rights Price ($)</label>
+                            <input type="number" class="form-control" id="digitalPrice" min="0" step="0.01">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="physicalPrice" class="form-label">Physical Print Price ($)</label>
+                            <input type="number" class="form-control" id="physicalPrice" min="0" step="0.01">
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="imageTags" class="form-label">Tags (comma separated)</label>
+                        <input type="text" class="form-control" id="imageTags" placeholder="nature, landscape, urban">
+                    </div>
+                    <button class="btn btn-primary" id="uploadImageBtn">Upload Image</button>
+                </div>
+            </div>
+            <hr class="my-4">
+        </div>
+
+        <!-- Gallery Filter -->
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <div class="input-group">
+                    <input type="text" class="form-control" id="searchInput" placeholder="Search images...">
+                    <button class="btn btn-outline-secondary" type="button" id="searchBtn">
+                        <i class="fas fa-search"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <select class="form-select" id="sortSelect">
+                    <option value="newest">Newest First</option>
+                    <option value="oldest">Oldest First</option>
+                    <option value="priceLow">Price: Low to High</option>
+                    <option value="priceHigh">Price: High to Low</option>
+                    <option value="popular">Most Popular</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Gallery -->
+        <div class="row" id="galleryContainer">
+            <!-- Images will be loaded here -->
+            <div class="col-12 text-center">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Image Modal -->
+    <div class="modal fade" id="imageModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="imageModalTitle"></h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-8">
+                            <img src="" alt="" class="img-fluid rounded" id="modalImage">
+                        </div>
+                        <div class="col-md-4">
+                            <p id="imageModalDescription"></p>
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <span class="badge bg-secondary" id="imageModalTags"></span>
+                            </div>
+                            <hr>
+                            <div class="mb-3">
+                                <label class="form-label">Purchase Options</label>
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input" type="radio" name="purchaseOption" id="digitalOption" value="digital" checked>
+                                    <label class="form-check-label" for="digitalOption">
+                                        Digital Rights - $<span id="digitalPriceDisplay">0</span>
+                                    </label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="purchaseOption" id="physicalOption" value="physical">
+                                    <label class="form-check-label" for="physicalOption">
+                                        Framed Print - $<span id="physicalPriceDisplay">0</span>
+                                    </label>
+                                </div>
+                            </div>
+                            <button class="btn btn-primary w-100" id="addToCartBtn">Add to Cart</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Cart Modal -->
+    <div class="modal fade" id="cartModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Your Cart</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="cartItemsContainer">
+                        <!-- Cart items will be loaded here -->
+                        <p class="text-center">Your cart is empty</p>
+                    </div>
+                    <hr>
+                    <div class="d-flex justify-content-between">
+                        <h5>Total:</h5>
+                        <h5 id="cartTotal">$0.00</h5>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Continue Shopping</button>
+                    <button type="button" class="btn btn-primary" id="checkoutBtn">Proceed to Checkout</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Login Modal -->
+    <div class="modal fade" id="loginModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="loginModalTitle">Login</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <button class="btn btn-outline-dark auth-provider-btn" id="googleLoginBtn">
+                        <i class="fab fa-google me-2"></i> Continue with Google
+                    </button>
+                    <button class="btn btn-dark auth-provider-btn" id="appleLoginBtn">
+                        <i class="fab fa-apple me-2"></i> Continue with Apple
+                    </button>
+                    
+                    <div class="auth-divider">
+                        <span class="auth-divider-text">or</span>
+                    </div>
+                    
+                    <div class="form-floating mb-3">
+                        <input type="email" class="form-control" id="loginEmail" placeholder="name@example.com">
+                        <label for="loginEmail">Email address</label>
+                    </div>
+                    <div class="form-floating mb-3">
+                        <input type="password" class="form-control" id="loginPassword" placeholder="Password">
+                        <label for="loginPassword">Password</label>
+                    </div>
+                    <div class="d-flex justify-content-between mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="rememberMe">
+                            <label class="form-check-label" for="rememberMe">Remember me</label>
+                        </div>
+                        <a href="#" id="forgotPasswordLink">Forgot password?</a>
+                    </div>
+                    <button class="btn btn-primary w-100 mb-3" id="submitLoginBtn">Login</button>
+                    <p class="text-center">Don't have an account? <a href="#" id="switchToRegisterLink">Register</a></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Register Modal -->
+    <div class="modal fade" id="registerModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Create Account</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-floating mb-3">
+                        <input type="text" class="form-control" id="registerName" placeholder="Your Name">
+                        <label for="registerName">Full Name</label>
+                    </div>
+                    <div class="form-floating mb-3">
+                        <input type="email" class="form-control" id="registerEmail" placeholder="name@example.com">
+                        <label for="registerEmail">Email address</label>
+                    </div>
+                    <div class="form-floating mb-3">
+                        <input type="password" class="form-control" id="registerPassword" placeholder="Password">
+                        <label for="registerPassword">Password</label>
+                    </div>
+                    <div class="form-floating mb-3">
+                        <input type="password" class="form-control" id="registerConfirmPassword" placeholder="Confirm Password">
+                        <label for="registerConfirmPassword">Confirm Password</label>
+                    </div>
+                    <button class="btn btn-primary w-100 mb-3" id="submitRegisterBtn">Create Account</button>
+                    <p class="text-center">Already have an account? <a href="#" id="switchToLoginLink">Login</a></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Forgot Password Modal -->
+    <div class="modal fade" id="forgotPasswordModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Reset Password</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-floating mb-3">
+                        <input type="email" class="form-control" id="resetEmail" placeholder="name@example.com">
+                        <label for="resetEmail">Email address</label>
+                    </div>
+                    <button class="btn btn-primary w-100" id="submitResetBtn">Send Reset Link</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Checkout Modal -->
+    <div class="modal fade" id="checkoutModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Checkout</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="checkoutForm">
+                        <div class="mb-3">
+                            <label for="checkoutName" class="form-label">Full Name</label>
+                            <input type="text" class="form-control" id="checkoutName" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="checkoutEmail" class="form-label">Email</label>
+                            <input type="email" class="form-control" id="checkoutEmail" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="checkoutAddress" class="form-label">Shipping Address</label>
+                            <textarea class="form-control" id="checkoutAddress" rows="3" required></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label for="checkoutPayment" class="form-label">Payment Method</label>
+                            <select class="form-select" id="checkoutPayment" required>
+                                <option value="">Select payment method</option>
+                                <option value="credit">Credit Card</option>
+                                <option value="paypal">PayPal</option>
+                                <option value="applepay">Apple Pay</option>
+                                <option value="googlepay">Google Pay</option>
+                            </select>
+                        </div>
+                        <div id="creditCardFields" class="hidden">
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <label for="cardNumber" class="form-label">Card Number</label>
+                                    <input type="text" class="form-control" id="cardNumber" placeholder="1234 5678 9012 3456">
+                                </div>
+                                <div class="col-md-3">
+                                    <label for="cardExpiry" class="form-label">Expiry</label>
+                                    <input type="text" class="form-control" id="cardExpiry" placeholder="MM/YY">
+                                </div>
+                                <div class="col-md-3">
+                                    <label for="cardCvc" class="form-label">CVC</label>
+                                    <input type="text" class="form-control" id="cardCvc" placeholder="123">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h5>Total:</h5>
+                            <h5 id="checkoutTotal">$0.00</h5>
+                        </div>
+                        <button type="button" class="btn btn-primary w-100" id="submitOrderBtn">Complete Purchase</button>
+                    </div>
+                    <div id="checkoutSuccess" class="text-center hidden">
+                        <i class="fas fa-check-circle text-success fa-5x mb-3"></i>
+                        <h3>Thank you for your purchase!</h3>
+                        <p>Your order has been placed successfully.</p>
+                        <p>A confirmation email has been sent to <span id="confirmationEmail"></span>.</p>
+                        <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Continue Shopping</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-dark text-white py-4 mt-5">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-4">
+                    <h5>ArtFrame</h5>
+                    <p>Premium images and prints from talented artists.</p>
+                </div>
+                <div class="col-md-4">
+                    <h5>Quick Links</h5>
+                    <ul class="list-unstyled">
+                        <li><a href="#" class="text-white">Home</a></li>
+                        <li><a href="#" class="text-white">Gallery</a></li>
+                        <li><a href="#" class="text-white">Terms of Service</a></li>
+                        <li><a href="#" class="text-white">Privacy Policy</a></li>
+                    </ul>
+                </div>
+                <div class="col-md-4">
+                    <h5>Contact</h5>
+                    <ul class="list-unstyled">
+                        <li><i class="fas fa-envelope me-2"></i> contact@artframe.example</li>
+                        <li><i class="fas fa-phone me-2"></i> (123) 456-7890</li>
+                    </ul>
+                </div>
+            </div>
+            <hr>
+            <div class="text-center">
+                <p class="mb-0">&copy; 2023 ArtFrame. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Firebase SDK -->
+    <script type="module">
+        // Import the functions you need from the SDKs you need
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-app.js";
+        import { getAnalytics } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-analytics.js";
+        import { 
+            getAuth, 
+            createUserWithEmailAndPassword, 
+            signInWithEmailAndPassword, 
+            signOut, 
+            onAuthStateChanged, 
+            GoogleAuthProvider, 
+            signInWithPopup, 
+            OAuthProvider, 
+            sendPasswordResetEmail 
+        } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-auth.js";
+        import { 
+            getFirestore, 
+            collection, 
+            addDoc, 
+            getDocs, 
+            query, 
+            where, 
+            orderBy, 
+            doc, 
+            setDoc, 
+            getDoc, 
+            updateDoc,
+            serverTimestamp 
+        } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore.js";
+        import { 
+            getStorage, 
+            ref, 
+            uploadBytes, 
+            getDownloadURL 
+        } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-storage.js";
+
+        // Your web app's Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyCNQgJypE5J0fHAuVKIHSXmrACfg2jjFFE",
+            authDomain: "image-1e1df.firebaseapp.com",
+            projectId: "image-1e1df",
+            storageBucket: "image-1e1df.appspot.com",
+            messagingSenderId: "757991507289",
+            appId: "1:757991507289:web:de40e3eb2186da011a7848",
+            measurementId: "G-6GF5NHYHG0"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const analytics = getAnalytics(app);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const storage = getStorage(app);
+
+        // DOM Elements
+        const loginBtn = document.getElementById('loginBtn');
+        const registerBtn = document.getElementById('registerBtn');
+        const logoutBtn = document.getElementById('logoutBtn');
+        const authButtons = document.getElementById('authButtons');
+        const userDropdown = document.getElementById('userDropdown');
+        const userName = document.getElementById('userName');
+        const adminControls = document.getElementById('adminControls');
+        const adminLink = document.getElementById('adminLink');
+        const cartIcon = document.getElementById('cartIcon');
+        const cartCount = document.getElementById('cartCount');
+        const galleryContainer = document.getElementById('galleryContainer');
+        const searchInput = document.getElementById('searchInput');
+        const searchBtn = document.getElementById('searchBtn');
+        const sortSelect = document.getElementById('sortSelect');
+        const imageUpload = document.getElementById('imageUpload');
+        const imageTitle = document.getElementById('imageTitle');
+        const imageDescription = document.getElementById('imageDescription');
+        const digitalPrice = document.getElementById('digitalPrice');
+        const physicalPrice = document.getElementById('physicalPrice');
+        const imageTags = document.getElementById('imageTags');
+        const uploadImageBtn = document.getElementById('uploadImageBtn');
+        const loginModal = new bootstrap.Modal(document.getElementById('loginModal'));
+        const registerModal = new bootstrap.Modal(document.getElementById('registerModal'));
+        const forgotPasswordModal = new bootstrap.Modal(document.getElementById('forgotPasswordModal'));
+        const imageModal = new bootstrap.Modal(document.getElementById('imageModal'));
+        const cartModal = new bootstrap.Modal(document.getElementById('cartModal'));
+        const checkoutModal = new bootstrap.Modal(document.getElementById('checkoutModal'));
+        const submitLoginBtn = document.getElementById('submitLoginBtn');
+        const submitRegisterBtn = document.getElementById('submitRegisterBtn');
+        const googleLoginBtn = document.getElementById('googleLoginBtn');
+        const appleLoginBtn = document.getElementById('appleLoginBtn');
+        const switchToRegisterLink = document.getElementById('switchToRegisterLink');
+        const switchToLoginLink = document.getElementById('switchToLoginLink');
+        const forgotPasswordLink = document.getElementById('forgotPasswordLink');
+        const submitResetBtn = document.getElementById('submitResetBtn');
+        const addToCartBtn = document.getElementById('addToCartBtn');
+        const checkoutBtn = document.getElementById('checkoutBtn');
+        const submitOrderBtn = document.getElementById('submitOrderBtn');
+        const checkoutPayment = document.getElementById('checkoutPayment');
+        const creditCardFields = document.getElementById('creditCardFields');
+
+        // Global variables
+        let currentUser = null;
+        let isAdmin = false;
+        let images = [];
+        let currentImage = null;
+        let cart = [];
+        let cartId = null;
+
+        // Initialize the app
+        document.addEventListener('DOMContentLoaded', () => {
+            // Check auth state
+            onAuthStateChanged(auth, (user) => {
+                if (user) {
+                    currentUser = user;
+                    authButtons.classList.add('hidden');
+                    userDropdown.classList.remove('hidden');
+                    userName.textContent = user.displayName || user.email;
+                    
+                    // Check if user is admin
+                    checkAdminStatus(user.uid);
+                    
+                    // Load user's cart
+                    loadUserCart(user.uid);
+                } else {
+                    currentUser = null;
+                    authButtons.classList.remove('hidden');
+                    userDropdown.classList.add('hidden');
+                    adminControls.classList.add('hidden');
+                    isAdmin = false;
+                    
+                    // Check for existing cart in localStorage
+                    const localCart = localStorage.getItem('guestCart');
+                    if (localCart) {
+                        cart = JSON.parse(localCart);
+                        updateCartCount();
+                    }
+                }
+            });
+
+            // Load images
+            loadImages();
+
+            // Event listeners
+            loginBtn.addEventListener('click', () => {
+                document.getElementById('loginModalTitle').textContent = 'Login';
+                loginModal.show();
+            });
+
+            registerBtn.addEventListener('click', () => {
+                registerModal.show();
+            });
+
+            logoutBtn.addEventListener('click', () => {
+                signOut(auth).then(() => {
+                    // Preserve guest cart if exists
+                    const guestCart = localStorage.getItem('guestCart');
+                    if (guestCart) {
+                        cart = JSON.parse(guestCart);
+                        updateCartCount();
+                    } else {
+                        cart = [];
+                        cartCount.textContent = '0';
+                    }
+                }).catch((error) => {
+                    console.error('Logout error:', error);
+                });
+            });
+
+            submitLoginBtn.addEventListener('click', () => {
+                const email = document.getElementById('loginEmail').value;
+                const password = document.getElementById('loginPassword').value;
+                
+                signInWithEmailAndPassword(auth, email, password)
+                    .then(() => {
+                        loginModal.hide();
+                    })
+                    .catch((error) => {
+                        alert(error.message);
+                    });
+            });
+
+            submitRegisterBtn.addEventListener('click', () => {
+                const name = document.getElementById('registerName').value;
+                const email = document.getElementById('registerEmail').value;
+                const password = document.getElementById('registerPassword').value;
+                const confirmPassword = document.getElementById('registerConfirmPassword').value;
+                
+                if (password !== confirmPassword) {
+                    alert("Passwords don't match!");
+                    return;
+                }
+                
+                createUserWithEmailAndPassword(auth, email, password)
+                    .then((userCredential) => {
+                        // Add user to Firestore
+                        return setDoc(doc(db, 'users', userCredential.user.uid), {
+                            name: name,
+                            email: email,
+                            createdAt: serverTimestamp(),
+                            isAdmin: false
+                        };
+                    })
+                    .then(() => {
+                        registerModal.hide();
+                    })
+                    .catch((error) => {
+                        alert(error.message);
+                    });
+            });
+
+            googleLoginBtn.addEventListener('click', () => {
+                const provider = new GoogleAuthProvider();
+                signInWithPopup(auth, provider)
+                    .then(() => {
+                        loginModal.hide();
+                    })
+                    .catch((error) => {
+                        alert(error.message);
+                    });
+            });
+
+            appleLoginBtn.addEventListener('click', () => {
+                const provider = new OAuthProvider('apple.com');
+                signInWithPopup(auth, provider)
+                    .then(() => {
+                        loginModal.hide();
+                    })
+                    .catch((error) => {
+                        alert(error.message);
+                    });
+            });
+
+            switchToRegisterLink.addEventListener('click', (e) => {
+                e.preventDefault();
+                loginModal.hide();
+                registerModal.show();
+            });
+
+            switchToLoginLink.addEventListener('click', (e) => {
+                e.preventDefault();
+                registerModal.hide();
+                loginModal.show();
+            });
+
+            forgotPasswordLink.addEventListener('click', (e) => {
+                e.preventDefault();
+                loginModal.hide();
+                forgotPasswordModal.show();
+            });
+
+            submitResetBtn.addEventListener('click', () => {
+                const email = document.getElementById('resetEmail').value;
+                
+                sendPasswordResetEmail(auth, email)
+                    .then(() => {
+                        alert('Password reset email sent!');
+                        forgotPasswordModal.hide();
+                    })
+                    .catch((error) => {
+                        alert(error.message);
+                    });
+            });
+
+            uploadImageBtn.addEventListener('click', () => {
+                uploadImage();
+            });
+
+            cartIcon.addEventListener('click', () => {
+                displayCart();
+                cartModal.show();
+            });
+
+            checkoutBtn.addEventListener('click', () => {
+                cartModal.hide();
+                displayCheckout();
+                checkoutModal.show();
+            });
+
+            checkoutPayment.addEventListener('change', (e) => {
+                if (e.target.value === 'credit') {
+                    creditCardFields.classList.remove('hidden');
+                } else {
+                    creditCardFields.classList.add('hidden');
+                }
+            });
+
+            submitOrderBtn.addEventListener('click', () => {
+                completePurchase();
+            });
+        });
+
+        // Check if user is admin
+        async function checkAdminStatus(uid) {
+            const userDoc = await getDoc(doc(db, 'users', uid));
+            if (userDoc.exists()) {
+                isAdmin = userDoc.data().isAdmin || false;
+                if (isAdmin) {
+                    adminControls.classList.remove('hidden');
+                    adminLink.classList.remove('hidden');
+                } else {
+                    adminControls.classList.add('hidden');
+                    adminLink.classList.add('hidden');
+                }
+            }
+        }
+
+        // Load images from Firestore
+        async function loadImages() {
+            galleryContainer.innerHTML = '<div class="col-12 text-center"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div></div>';
+            
+            try {
+                const q = query(collection(db, 'images'), orderBy('createdAt', 'desc'));
+                const querySnapshot = await getDocs(q);
+                images = [];
+                
+                querySnapshot.forEach((doc) => {
+                    images.push({ id: doc.id, ...doc.data() });
+                });
+                
+                displayImages(images);
+            } catch (error) {
+                console.error('Error loading images:', error);
+                galleryContainer.innerHTML = '<div class="col-12 text-center text-danger">Error loading images. Please try again later.</div>';
+            }
+        }
+
+        // Display images in gallery
+        function displayImages(imagesToDisplay) {
+            galleryContainer.innerHTML = '';
+            
+            if (imagesToDisplay.length === 0) {
+                galleryContainer.innerHTML = '<div class="col-12 text-center">No images found.</div>';
+                return;
+            }
+            
+            imagesToDisplay.forEach(image => {
+                const col = document.createElement('div');
+                col.className = 'col-md-4 col-lg-3';
+                
+                col.innerHTML = `
+                    <div class="card h-100">
+                        <div class="image-container">
+                            <img src="${image.thumbnailUrl || image.imageUrl}" alt="${image.title}" class="card-img-top">
+                        </div>
+                        <div class="card-body">
+                            <h5 class="card-title">${image.title}</h5>
+                            <p class="card-text text-muted">${image.description.substring(0, 50)}${image.description.length > 50 ? '...' : ''}</p>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="badge price-badge">$${image.digitalPrice}</span>
+                                <button class="btn btn-sm btn-outline-primary view-image-btn" data-id="${image.id}">View</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                galleryContainer.appendChild(col);
+            });
+            
+            // Add event listeners to view buttons
+            document.querySelectorAll('.view-image-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const imageId = e.target.getAttribute('data-id');
+                    viewImage(imageId);
+                });
+            });
+        }
+
+        // View image details
+        async function viewImage(imageId) {
+            currentImage = images.find(img => img.id === imageId);
+            
+            if (!currentImage) return;
+            
+            document.getElementById('imageModalTitle').textContent = currentImage.title;
+            document.getElementById('modalImage').src = currentImage.imageUrl;
+            document.getElementById('imageModalDescription').textContent = currentImage.description;
+            document.getElementById('imageModalTags').textContent = currentImage.tags.join(', ');
+            document.getElementById('digitalPriceDisplay').textContent = currentImage.digitalPrice;
+            document.getElementById('physicalPriceDisplay').textContent = currentImage.physicalPrice;
+            
+            imageModal.show();
+            
+            // Add to cart button event listener
+            addToCartBtn.onclick = () => {
+                const purchaseOption = document.querySelector('input[name="purchaseOption"]:checked').value;
+                const price = purchaseOption === 'digital' ? currentImage.digitalPrice : currentImage.physicalPrice;
+                
+                addToCart(currentImage.id, currentImage.title, purchaseOption, price, currentImage.imageUrl);
+                imageModal.hide();
+            };
+        }
+
+        // Upload image to storage and Firestore
+        async function uploadImage() {
+            const file = imageUpload.files[0];
+            if (!file) {
+                alert('Please select an image file');
+                return;
+            }
+            
+            if (!imageTitle.value) {
+                alert('Please enter a title');
+                return;
+            }
+            
+            if (!digitalPrice.value || !physicalPrice.value) {
+                alert('Please set both digital and physical prices');
+                return;
+            }
+            
+            uploadImageBtn.disabled = true;
+            uploadImageBtn.textContent = 'Uploading...';
+            
+            try {
+                // Upload image to storage
+                const storageRef = ref(storage, `images/${file.name}`);
+                const snapshot = await uploadBytes(storageRef, file);
+                const imageUrl = await getDownloadURL(snapshot.ref);
+                
+                // Create thumbnail (in a real app, you'd create an actual thumbnail)
+                const thumbnailUrl = imageUrl;
+                
+                // Add image data to Firestore
+                const imageData = {
+                    title: imageTitle.value,
+                    description: imageDescription.value,
+                    tags: imageTags.value.split(',').map(tag => tag.trim()),
+                    digitalPrice: parseFloat(digitalPrice.value),
+                    physicalPrice: parseFloat(physicalPrice.value),
+                    imageUrl: imageUrl,
+                    thumbnailUrl: thumbnailUrl,
+                    createdAt: serverTimestamp(),
+                    uploadedBy: currentUser.uid
+                };
+                
+                await addDoc(collection(db, 'images'), imageData);
+                
+                // Reset form
+                imageUpload.value = '';
+                imageTitle.value = '';
+                imageDescription.value = '';
+                digitalPrice.value = '';
+                physicalPrice.value = '';
+                imageTags.value = '';
+                
+                // Reload images
+                loadImages();
+                
+                alert('Image uploaded successfully!');
+            } catch (error) {
+                console.error('Error uploading image:', error);
+                alert('Error uploading image. Please try again.');
+            } finally {
+                uploadImageBtn.disabled = false;
+                uploadImageBtn.textContent = 'Upload Image';
+            }
+        }
+
+        // Add item to cart
+        function addToCart(imageId, title, type, price, imageUrl) {
+            const existingItem = cart.find(item => item.imageId === imageId && item.type === type);
+            
+            if (existingItem) {
+                existingItem.quantity += 1;
+            } else {
+                cart.push({
+                    imageId,
+                    title,
+                    type,
+                    price,
+                    imageUrl,
+                    quantity: 1
+                });
+            }
+            
+            updateCartCount();
+            saveCart();
+        }
+
+        // Update cart count display
+        function updateCartCount() {
+            const count = cart.reduce((total, item) => total + item.quantity, 0);
+            cartCount.textContent = count;
+        }
+
+        // Save cart to Firestore (for logged in users) or localStorage (for guests)
+        async function saveCart() {
+            if (currentUser) {
+                // Save to Firestore
+                if (!cartId) {
+                    // Create new cart document if it doesn't exist
+                    const docRef = await addDoc(collection(db, 'carts'), {
+                        userId: currentUser.uid,
+                        items: cart,
+                        updatedAt: serverTimestamp()
+                    });
+                    cartId = docRef.id;
+                } else {
+                    // Update existing cart
+                    await updateDoc(doc(db, 'carts', cartId), {
+                        items: cart,
+                        updatedAt: serverTimestamp()
+                    });
+                }
+            } else {
+                // Save to localStorage
+                localStorage.setItem('guestCart', JSON.stringify(cart));
+            }
+        }
+
+        // Load user's cart from Firestore
+        async function loadUserCart(userId) {
+            try {
+                const q = query(collection(db, 'carts'), where('userId', '==', userId));
+                const querySnapshot = await getDocs(q);
+                
+                if (!querySnapshot.empty) {
+                    const cartDoc = querySnapshot.docs[0];
+                    cartId = cartDoc.id;
+                    cart = cartDoc.data().items || [];
+                    updateCartCount();
+                }
+            } catch (error) {
+                console.error('Error loading cart:', error);
+            }
+        }
+
+        // Display cart items in modal
+        function displayCart() {
+            const container = document.getElementById('cartItemsContainer');
+            
+            if (cart.length === 0) {
+                container.innerHTML = '<p class="text-center">Your cart is empty</p>';
+                document.getElementById('cartTotal').textContent = '$0.00';
+                checkoutBtn.disabled = true;
+                return;
+            }
+            
+            let html = '';
+            let total = 0;
+            
+            cart.forEach((item, index) => {
+                const itemTotal = item.price * item.quantity;
+                total += itemTotal;
+                
+                html += `
+                    <div class="d-flex mb-3">
+                        <img src="${item.imageUrl}" alt="${item.title}" style="width: 80px; height: 80px; object-fit: cover;" class="rounded me-3">
+                        <div class="flex-grow-1">
+                            <h6>${item.title}</h6>
+                            <small class="text-muted">${item.type === 'digital' ? 'Digital Rights' : 'Framed Print'}</small>
+                            <div class="d-flex justify-content-between align-items-center mt-2">
+                                <div class="input-group" style="width: 120px;">
+                                    <button class="btn btn-outline-secondary btn-sm decrease-quantity" type="button" data-index="${index}">-</button>
+                                    <input type="text" class="form-control form-control-sm text-center quantity-input" value="${item.quantity}" readonly>
+                                    <button class="btn btn-outline-secondary btn-sm increase-quantity" type="button" data-index="${index}">+</button>
+                                </div>
+                                <span>$${itemTotal.toFixed(2)}</span>
+                            </div>
+                        </div>
+                        <button class="btn btn-outline-danger btn-sm remove-item" data-index="${index}">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                `;
+            });
+            
+            container.innerHTML = html;
+            document.getElementById('cartTotal').textContent = `$${total.toFixed(2)}`;
+            checkoutBtn.disabled = false;
+            
+            // Add event listeners to quantity buttons
+            document.querySelectorAll('.increase-quantity').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const index = e.target.getAttribute('data-index');
+                    cart[index].quantity += 1;
+                    displayCart();
+                    saveCart();
+                });
+            });
+            
+            document.querySelectorAll('.decrease-quantity').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const index = e.target.getAttribute('data-index');
+                    if (cart[index].quantity > 1) {
+                        cart[index].quantity -= 1;
+                    } else {
+                        cart.splice(index, 1);
+                    }
+                    displayCart();
+                    saveCart();
+                });
+            });
+            
+            document.querySelectorAll('.remove-item').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const index = e.target.getAttribute('data-index');
+                    cart.splice(index, 1);
+                    displayCart();
+                    saveCart();
+                });
+            });
+        }
+
+        // Display checkout form
+        function displayCheckout() {
+            const checkoutForm = document.getElementById('checkoutForm');
+            const checkoutSuccess = document.getElementById('checkoutSuccess');
+            
+            checkoutForm.classList.remove('hidden');
+            checkoutSuccess.classList.add('hidden');
+            
+            // Calculate total
+            const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+            document.getElementById('checkoutTotal').textContent = `$${total.toFixed(2)}`;
+            
+            // Pre-fill user info if logged in
+            if (currentUser) {
+                document.getElementById('checkoutName').value = currentUser.displayName || '';
+                document.getElementById('checkoutEmail').value = currentUser.email || '';
+            }
+        }
+
+        // Complete purchase
+        async function completePurchase() {
+            const name = document.getElementById('checkoutName').value;
+            const email = document.getElementById('checkoutEmail').value;
+            const address = document.getElementById('checkoutAddress').value;
+            const paymentMethod = document.getElementById('checkoutPayment').value;
+            
+            if (!name || !email || !address || !paymentMethod) {
+                alert('Please fill in all required fields');
+                return;
+            }
+            
+            if (paymentMethod === 'credit') {
+                const cardNumber = document.getElementById('cardNumber').value;
+                const cardExpiry = document.getElementById('cardExpiry').value;
+                const cardCvc = document.getElementById('cardCvc').value;
+                
+                if (!cardNumber || !cardExpiry || !cardCvc) {
+                    alert('Please fill in all credit card details');
+                    return;
+                }
+            }
+            
+            submitOrderBtn.disabled = true;
+            submitOrderBtn.textContent = 'Processing...';
+            
+            try {
+                // In a real app, you would process payment here
+                // For this demo, we'll just simulate a successful payment
+                
+                // Create order in Firestore
+                const orderData = {
+                    userId: currentUser ? currentUser.uid : null,
+                    userName: name,
+                    userEmail: email,
+                    shippingAddress: address,
+                    paymentMethod: paymentMethod,
+                    items: cart,
+                    total: cart.reduce((sum, item) => sum + (item.price * item.quantity), 0),
+                    status: 'completed',
+                    createdAt: serverTimestamp()
+                };
+                
+                await addDoc(collection(db, 'orders'), orderData);
+                
+                // Clear cart
+                cart = [];
+                updateCartCount();
+                saveCart();
+                
+                // Show success message
+                document.getElementById('checkoutForm').classList.add('hidden');
+                document.getElementById('checkoutSuccess').classList.remove('hidden');
+                document.getElementById('confirmationEmail').textContent = email;
+                
+                // Reset checkout form
+                document.getElementById('checkoutName').value = '';
+                document.getElementById('checkoutEmail').value = '';
+                document.getElementById('checkoutAddress').value = '';
+                document.getElementById('checkoutPayment').value = '';
+                document.getElementById('cardNumber').value = '';
+                document.getElementById('cardExpiry').value = '';
+                document.getElementById('cardCvc').value = '';
+            } catch (error) {
+                console.error('Error completing purchase:', error);
+                alert('Error completing purchase. Please try again.');
+            } finally {
+                submitOrderBtn.disabled = false;
+                submitOrderBtn.textContent = 'Complete Purchase';
+            }
+        }
+    </script>
+</body>
+</html>
