@@ -1,0 +1,484 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Photo Rights & Prints</title>
+  <style>
+    :root{--bg:#f7f7f8;--card:#fff;--ink:#0b0b0c;--muted:#6b7280;--border:#e5e7eb;--accent:#111827}
+    *{box-sizing:border-box}
+    body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Inter,Arial,sans-serif;background:linear-gradient(135deg,#fafafa,#f0f1f5)}
+    header{position:sticky;top:0;backdrop-filter:blur(8px);background:rgba(255,255,255,.8);border-bottom:1px solid var(--border);z-index:20}
+    .container{max-width:1120px;margin:0 auto;padding:12px 16px}
+    .brand{font-weight:800;font-size:20px}
+    button, .btn{cursor:pointer;border-radius:12px;border:1px solid var(--border);background:#fff;padding:10px 14px}
+    .btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+    .btn.ghost{background:transparent}
+    .grid{display:grid;gap:16px}
+    @media(min-width:640px){.grid.cols-2{grid-template-columns:repeat(2,1fr)}}
+    @media(min-width:960px){.grid.cols-3{grid-template-columns:repeat(3,1fr)}}
+    .card{background:var(--card);border:1px solid var(--border);border-radius:16px;box-shadow:0 10px 20px rgba(0,0,0,.04)}
+    .card .pad{padding:16px}
+    .thumb{aspect-ratio:4/3;background:#eee;width:100%;object-fit:cover;display:block;border-top-left-radius:16px;border-top-right-radius:16px}
+    .row{display:flex;align-items:center;gap:8px}
+    .row.between{justify-content:space-between}
+    .muted{color:var(--muted)}
+    .hidden{display:none !important}
+    /* Drawer */
+    .drawer{position:fixed;inset:0;z-index:50;pointer-events:none}
+    .drawer.open{pointer-events:auto}
+    .drawer .shade{position:absolute;inset:0;background:rgba(0,0,0,.45);opacity:0;transition:opacity .2s}
+    .drawer.open .shade{opacity:1}
+    .drawer .panel{position:absolute;top:0;right:0;height:100%;width:min(420px,100%);background:#fff;border-left:1px solid var(--border);transform:translateX(100%);transition:transform .2s;display:flex;flex-direction:column}
+    .drawer.open .panel{transform:translateX(0)}
+    .list{display:flex;flex-direction:column;gap:12px;overflow:auto}
+    .pill{padding:6px 10px;border-radius:999px;border:1px solid var(--border);background:#fff}
+    /* Modal */
+    .modal{position:fixed;inset:0;z-index:50;display:none}
+    .modal.open{display:block}
+    .modal .shade{position:absolute;inset:0;background:rgba(0,0,0,.45)}
+    .modal .box{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);background:#fff;border-radius:16px;border:1px solid var(--border);box-shadow:0 20px 40px rgba(0,0,0,.1);padding:20px;width:min(680px,94vw)}
+    input, select{border:1px solid var(--border);border-radius:12px;padding:10px}
+    input[type="number"]{width:100px}
+    .uploader-grid{display:grid;gap:10px}
+    @media(min-width:640px){.uploader-grid{grid-template-columns:repeat(2,1fr)}}
+    footer{color:#6b7280}
+    .chip{border:1px solid var(--border);padding:6px 10px;border-radius:999px}
+  </style>
+</head>
+<body>
+  <header>
+    <div class="container row between">
+      <div class="brand">📸 Photo Rights & Prints</div>
+      <div class="row">
+        <button id="licenseBtn" class="btn ghost" title="View license terms">License</button>
+        <span id="userBadge" class="muted"></span>
+        <button id="signBtn" class="btn ghost">Sign in</button>
+        <button id="cartBtn" class="btn">Cart</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="container" style="padding:16px">
+    <!-- Admin uploader -->
+    <section id="uploader" class="card hidden">
+      <div class="pad">
+        <h3>Admin: Upload new photo</h3>
+        <div class="uploader-grid" style="margin-top:8px">
+          <input id="titleInput" placeholder="Title" />
+          <input id="descInput" placeholder="Description (optional)" />
+          <label>Digital price ($)<br><input id="digitalInput" type="number" min="0" step="1" value="10" /></label>
+          <label>Physical price ($)<br><input id="physicalInput" type="number" min="0" step="1" value="30" /></label>
+          <label>Choose image<br><input id="fileInput" type="file" accept="image/*" /></label>
+          <div class="row">
+            <button id="uploadBtn" class="btn primary">Upload</button>
+            <span class="muted" id="uploadMsg"></span>
+          </div>
+        </div>
+        <p class="muted" style="margin-top:6px">Tip: set your admin emails in <code>ADMIN_EMAILS</code> inside this file.</p>
+      </div>
+    </section>
+
+    <!-- Gallery heading -->
+    <div class="row between" style="margin:16px 0">
+      <h2 style="margin:0">Gallery</h2>
+      <div id="countBadge" class="muted">Loading…</div>
+    </div>
+
+    <!-- Gallery grid -->
+    <section id="gallery" class="grid cols-2 cols-3"></section>
+  </main>
+
+  <footer class="container" style="padding:24px 16px 64px">
+    <div style="border-top:1px solid var(--border);padding-top:12px">© <span id="year"></span> Your Names • Demo (no real payments).</div>
+  </footer>
+
+  <!-- Cart Drawer -->
+  <div class="drawer" id="cartDrawer">
+    <div class="shade" data-close="cart"></div>
+    <div class="panel">
+      <div class="row between" style="padding:12px 16px;border-bottom:1px solid var(--border)">
+        <strong>Your Cart</strong>
+        <button class="btn ghost" data-close="cart">Close</button>
+      </div>
+      <div id="cartList" class="list" style="padding:12px 16px;flex:1"></div>
+      <div style="padding:12px 16px;border-top:1px solid var(--border)">
+        <div class="row between" style="margin-bottom:8px">
+          <span class="muted">Subtotal</span>
+          <strong id="subtotal">$0.00</strong>
+        </div>
+        <button id="checkoutBtn" class="btn primary" style="width:100%">Checkout (Demo)</button>
+        <div class="muted" style="font-size:12px;margin-top:6px">You can buy without logging in. Log in to keep your cart across devices.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sign-in Modal -->
+  <div class="modal" id="signModal">
+    <div class="shade" data-close="sign"></div>
+    <div class="box">
+      <h3 style="margin:0 0 8px">Sign in</h3>
+      <div class="row" style="gap:8px;margin-bottom:8px">
+        <input id="emailInput" placeholder="Email" style="flex:1" />
+        <input id="pwInput" type="password" placeholder="Password" style="flex:1" />
+      </div>
+      <div class="row" style="gap:8px;margin-bottom:8px">
+        <button id="emailSignIn" class="btn primary">Sign in</button>
+        <button id="emailSignUp" class="btn">Create account</button>
+      </div>
+      <div class="row" style="gap:8px;margin-bottom:8px">
+        <button id="googleBtn" class="btn" style="flex:1">Continue with Google</button>
+        <button id="appleBtn" class="btn" style="flex:1">Continue with Apple</button>
+      </div>
+      <div id="authMsg" class="muted" style="font-size:12px"></div>
+    </div>
+  </div>
+
+  <!-- License Modal -->
+  <div class="modal" id="licenseModal">
+    <div class="shade" data-close="license"></div>
+    <div class="box">
+      <h3 style="margin:0 0 8px">Simple Digital License (Summary)</h3>
+      <ul>
+        <li>Non-exclusive, perpetual usage for personal and commercial projects.</li>
+        <li>No resale or redistribution of the original file as-is.</li>
+        <li>No use in unlawful, defamatory, or hateful content.</li>
+        <li>Attribution appreciated but not required.</li>
+      </ul>
+      <p class="muted" style="font-size:12px">Replace with your own legal terms for production.</p>
+      <div class="row" style="justify-content:flex-end"><button class="btn" data-close="license">Close</button></div>
+    </div>
+  </div>
+
+  <!-- Improvements bubble -->
+  <div style="position:fixed;bottom:16px;right:16px;background:#fff;border:1px solid var(--border);border-radius:12px;padding:10px;max-width:300px;box-shadow:0 10px 24px rgba(0,0,0,.06);font-size:12px">
+    <strong>Improvements included:</strong>
+    <ul style="margin:6px 0 0 16px">
+      <li>Guest cart persists (localStorage) and syncs to Firestore when signed in.</li>
+      <li>Admin-only uploader (set emails in code).</li>
+      <li>Digital vs Physical variants with separate prices.</li>
+      <li>Demo checkout saves order (user) or downloads JSON (guest).</li>
+      <li>Basic license modal.</li>
+    </ul>
+  </div>
+
+  <!-- Firebase + App (ESM) -->
+  <script type="module">
+    // ====== Admins (edit these!) ======
+    const ADMIN_EMAILS = [
+      "leon.e.sieber@icloud.com",
+      "friend@example.com",
+    ];
+
+    // ====== Firebase: provided config ======
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import { getAnalytics, isSupported as analyticsSupported } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-analytics.js";
+    import {
+      getAuth,
+      onAuthStateChanged,
+      GoogleAuthProvider,
+      OAuthProvider,
+      signInWithPopup,
+      signInWithEmailAndPassword,
+      createUserWithEmailAndPassword,
+      signOut,
+      setPersistence,
+      browserLocalPersistence,
+    } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+    import {
+      getFirestore,
+      collection,
+      addDoc,
+      doc,
+      getDoc,
+      getDocs,
+      setDoc,
+      serverTimestamp,
+      query,
+      orderBy,
+      limit,
+    } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+    import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyCNQgJypE5J0fHAuVKIHSXmrACfg2jjFFE",
+      authDomain: "image-1e1df.firebaseapp.com",
+      projectId: "image-1e1df",
+      storageBucket: "image-1e1df.firebasestorage.app",
+      messagingSenderId: "757991507289",
+      appId: "1:757991507289:web:de40e3eb2186da011a7848",
+      measurementId: "G-6GF5NHYHG0"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    try { if (await analyticsSupported()) getAnalytics(app); } catch {}
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+    const storage = getStorage(app);
+
+    // ====== Utils ======
+    const $ = (sel) => document.querySelector(sel);
+    const $$ = (sel) => Array.from(document.querySelectorAll(sel));
+    const fmt = (n) => (n ?? 0).toLocaleString(undefined, { style: 'currency', currency: 'USD' });
+    const uid = () => Math.random().toString(36).slice(2);
+
+    // ====== Elements ======
+    const yearEl = $('#year'); yearEl.textContent = new Date().getFullYear();
+    const signBtn = $('#signBtn');
+    const userBadge = $('#userBadge');
+    const uploader = $('#uploader');
+    const licenseBtn = $('#licenseBtn');
+    const gallery = $('#gallery');
+    const countBadge = $('#countBadge');
+
+    const cartDrawer = $('#cartDrawer');
+    const cartList = $('#cartList');
+    const subtotalEl = $('#subtotal');
+
+    const signModal = $('#signModal');
+    const licenseModal = $('#licenseModal');
+
+    // ====== Local Cart ======
+    const LS_CART_KEY = 'photo-shop-cart-v1';
+    const readCart = () => { try { return JSON.parse(localStorage.getItem(LS_CART_KEY)) || { items:{}, updatedAt:Date.now() }; } catch { return { items:{}, updatedAt:Date.now() }; } };
+    const writeCart = (c) => localStorage.setItem(LS_CART_KEY, JSON.stringify({ ...c, updatedAt:Date.now() }));
+    let CART = readCart();
+
+    const cartTotal = () => Object.values(CART.items).reduce((s,it)=> s + (it.price||0)*(it.qty||1), 0);
+    const renderCart = () => {
+      cartList.innerHTML = '';
+      const entries = Object.entries(CART.items);
+      if (entries.length === 0) {
+        cartList.innerHTML = '<div class="muted">Your cart is empty.</div>';
+      } else {
+        for (const [key,it] of entries) {
+          const row = document.createElement('div');
+          row.className = 'row';
+          row.style = 'gap:10px;border:1px solid var(--border);padding:10px;border-radius:12px';
+          row.innerHTML = `
+            ${it.thumbnailUrl ? `<img src="${it.thumbnailUrl}" alt="thumb" style="width:64px;height:64px;object-fit:cover;border-radius:8px">` : ''}
+            <div style="flex:1">
+              <div><strong>${it.title}</strong></div>
+              <div class="muted" style="font-size:12px">${it.kind==='digital'?'Digital License':`Framed Print ${it.size}`} • Qty ${it.qty}</div>
+            </div>
+            <div><strong>${fmt((it.price||0)*(it.qty||1))}</strong></div>
+            <button class="btn ghost" data-remove="${key}">Remove</button>
+          `;
+          cartList.appendChild(row);
+        }
+      }
+      subtotalEl.textContent = fmt(cartTotal());
+      // Bind remove
+      $$('[data-remove]').forEach(b=> b.onclick = ()=> { delete CART.items[b.dataset.remove]; writeCart(CART); renderCart(); syncCartCloud(); });
+    };
+
+    // ====== Auth ======
+    const updateAuthUI = (user) => {
+      if (user) {
+        userBadge.textContent = `Hi, ${user.email}`;
+        signBtn.textContent = 'Sign out';
+      } else {
+        userBadge.textContent = '';
+        signBtn.textContent = 'Sign in';
+      }
+      // Admin gate
+      uploader.classList.toggle('hidden', !(user && ADMIN_EMAILS.includes(user.email||'')));
+    };
+
+    setPersistence(auth, browserLocalPersistence);
+    onAuthStateChanged(auth, async (user)=>{
+      updateAuthUI(user);
+      await mergeCartWithCloud(user);
+      await loadProducts();
+    });
+
+    // ====== Cart Cloud Sync ======
+    async function mergeCartWithCloud(user){
+      if (!user) return; // guests only local
+      const cartRef = doc(db, 'users', user.uid, 'meta', 'cart');
+      const snap = await getDoc(cartRef);
+      const cloud = snap.exists() ? snap.data() : { items:{}, updatedAt:0 };
+      // simple merge (local overwrites per key)
+      const merged = { items: { ...cloud.items, ...CART.items }, updatedAt: Date.now() };
+      CART = merged; writeCart(CART); await setDoc(cartRef, merged, { merge:true });
+      renderCart();
+    }
+    async function syncCartCloud(){
+      const user = auth.currentUser; if (!user) return;
+      const cartRef = doc(db, 'users', user.uid, 'meta', 'cart');
+      await setDoc(cartRef, CART, { merge:true });
+    }
+
+    // ====== Products ======
+    async function loadProducts(){
+      countBadge.textContent = 'Loading…';
+      const qRef = query(collection(db, 'products'), orderBy('createdAt','desc'), limit(100));
+      const snap = await getDocs(qRef);
+      const items = snap.docs.map(d=> ({ id:d.id, ...d.data() }));
+      countBadge.textContent = `${items.length} photos`;
+      renderGallery(items);
+    }
+
+    function renderGallery(items){
+      gallery.innerHTML = '';
+      if (items.length === 0){
+        gallery.innerHTML = '<div class="card pad muted">No photos yet. Admins can upload above.</div>';
+        return;
+      }
+      for (const p of items){
+        const card = document.createElement('article');
+        card.className = 'card';
+        card.innerHTML = `
+          <img class="thumb" src="${p.imageUrl||''}" alt="${p.title||''}">
+          <div class="pad">
+            <div class="row between">
+              <div><strong>${p.title||''}</strong></div>
+              <div class="chip" data-kind="price">${fmt(p.digitalPrice||0)}</div>
+            </div>
+            ${p.description? `<div class="muted" style="font-size:14px;margin-top:4px">${p.description}</div>`:''}
+            <div class="row" style="gap:8px;margin:10px 0">
+              <button class="pill" data-variant="digital">Digital License</button>
+              <button class="pill" data-variant="physical">Framed Print</button>
+            </div>
+            <div class="row" style="gap:8px;margin:8px 0" data-physical>
+              <select data-size>
+                <option>A4</option>
+                <option>A3</option>
+                <option>30x40cm</option>
+                <option>50x70cm</option>
+              </select>
+              <input type="number" min="1" value="1" data-qty />
+            </div>
+            <div class="row between">
+              <div><strong data-price>${fmt(p.digitalPrice||0)}</strong></div>
+              <button class="btn primary" data-add>Add to Cart</button>
+            </div>
+          </div>
+        `;
+        const priceChip = card.querySelector('[data-kind="price"]');
+        const priceEl = card.querySelector('[data-price]');
+        const physicalRow = card.querySelector('[data-physical]');
+        const btnDigital = card.querySelector('[data-variant="digital"]');
+        const btnPhysical = card.querySelector('[data-variant="physical"]');
+        const addBtn = card.querySelector('[data-add]');
+        const qtyEl = card.querySelector('[data-qty]');
+        const sizeEl = card.querySelector('[data-size]');
+
+        let kind = 'digital';
+        const updatePrice = ()=>{
+          const price = kind==='digital' ? (p.digitalPrice||0) : (p.physicalPrice||0);
+          priceEl.textContent = fmt(price);
+          priceChip.textContent = fmt(price);
+          physicalRow.style.display = kind==='physical' ? 'flex' : 'none';
+        };
+        btnDigital.onclick = ()=>{ kind='digital'; updatePrice(); };
+        btnPhysical.onclick = ()=>{ kind='physical'; updatePrice(); };
+        updatePrice();
+
+        addBtn.onclick = ()=>{
+          const price = kind==='digital' ? (p.digitalPrice||0) : (p.physicalPrice||0);
+          const qty = kind==='physical' ? Math.max(1, Number(qtyEl.value||1)) : 1;
+          const size = kind==='physical' ? sizeEl.value : undefined;
+          const key = `${p.id}:${kind}:${size||'std'}`;
+          if (!CART.items[key]) CART.items[key] = { productId:p.id, title:p.title, thumbnailUrl:p.imageUrl, kind, size, price, qty:0 };
+          CART.items[key].qty += qty;
+          writeCart(CART); renderCart(); syncCartCloud();
+          openDrawer();
+        };
+
+        gallery.appendChild(card);
+      }
+    }
+
+    // ====== Uploader ======
+    const titleInput = $('#titleInput');
+    const descInput = $('#descInput');
+    const digitalInput = $('#digitalInput');
+    const physicalInput = $('#physicalInput');
+    const fileInput = $('#fileInput');
+    const uploadBtn = $('#uploadBtn');
+    const uploadMsg = $('#uploadMsg');
+
+    uploadBtn.onclick = async () => {
+      const user = auth.currentUser;
+      if (!(user && ADMIN_EMAILS.includes(user.email||''))) { alert('Only admins can upload.'); return; }
+      const file = fileInput.files?.[0];
+      if (!file) { alert('Choose an image file.'); return; }
+      try {
+        uploadBtn.disabled = true; uploadMsg.textContent = 'Uploading…';
+        const id = uid();
+        const storageRef = ref(storage, `products/${id}/${file.name}`);
+        await uploadBytes(storageRef, file);
+        const url = await getDownloadURL(storageRef);
+        const docRef = doc(db, 'products', id);
+        await setDoc(docRef, {
+          title: titleInput.value || file.name,
+          description: descInput.value || '',
+          digitalPrice: Number(digitalInput.value||0),
+          physicalPrice: Number(physicalInput.value||0),
+          imageUrl: url,
+          thumbnailUrl: url,
+          ownerUid: user.uid,
+          ownerEmail: user.email,
+          createdAt: serverTimestamp(),
+        });
+        titleInput.value = descInput.value = ''; fileInput.value = ''; uploadMsg.textContent = 'Uploaded!';
+        await loadProducts();
+        setTimeout(()=> uploadMsg.textContent = '', 1500);
+      } catch (e) {
+        alert(e.message);
+      } finally {
+        uploadBtn.disabled = false;
+      }
+    };
+
+    // ====== Checkout (Demo) ======
+    $('#checkoutBtn').onclick = async () => {
+      const order = { id: uid(), createdAt: new Date().toISOString(), userUid: auth.currentUser?.uid || null, items: CART.items, subtotal: cartTotal(), status:'pending' };
+      if (auth.currentUser) {
+        await setDoc(doc(db, 'orders', order.id), { ...order, createdAt: serverTimestamp() });
+        alert('Order saved! (demo). Connect Stripe/PayPal for real payments.');
+      } else {
+        const blob = new Blob([JSON.stringify(order,null,2)], { type:'application/json' });
+        const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href=url; a.download=`order-${order.id}.json`; a.click(); URL.revokeObjectURL(url);
+        alert('Downloaded your order summary (demo).');
+      }
+      CART = { items:{}, updatedAt:Date.now() }; writeCart(CART); renderCart(); closeDrawer();
+    };
+
+    // ====== Open/Close helpers ======
+    const openDrawer = ()=> cartDrawer.classList.add('open');
+    const closeDrawer = ()=> cartDrawer.classList.remove('open');
+    $('#cartBtn').onclick = openDrawer;
+    $$('[data-close="cart"]').forEach(el=> el.onclick = closeDrawer);
+
+    const openSign = ()=> signModal.classList.add('open');
+    const closeSign = ()=> signModal.classList.remove('open');
+    $$('[data-close="sign"]').forEach(el=> el.onclick = closeSign);
+
+    const openLicense = ()=> licenseModal.classList.add('open');
+    const closeLicense = ()=> licenseModal.classList.remove('open');
+    licenseBtn.onclick = openLicense; $$('[data-close="license"]').forEach(el=> el.onclick = closeLicense);
+
+    // ====== Auth Buttons ======
+    signBtn.onclick = async ()=> {
+      if (auth.currentUser) { await signOut(auth); } else { openSign(); }
+    };
+    $('#emailSignIn').onclick = async ()=> {
+      try { await signInWithEmailAndPassword(auth, $('#emailInput').value, $('#pwInput').value); closeSign(); } catch(e){ $('#authMsg').textContent = e.message; }
+    };
+    $('#emailSignUp').onclick = async ()=> {
+      try { await createUserWithEmailAndPassword(auth, $('#emailInput').value, $('#pwInput').value); closeSign(); } catch(e){ $('#authMsg').textContent = e.message; }
+    };
+    $('#googleBtn').onclick = async ()=> {
+      try { await signInWithPopup(auth, new GoogleAuthProvider()); closeSign(); } catch(e){ $('#authMsg').textContent = e.message; }
+    };
+    $('#appleBtn').onclick = async ()=> {
+      try { await signInWithPopup(auth, new OAuthProvider('apple.com')); closeSign(); } catch(e){ $('#authMsg').textContent = e.message + ' — Ensure Apple provider is enabled in Firebase Console.'; }
+    };
+
+    // ====== Initial ======
+    renderCart();
+  </script>
+</body>
+</html>
