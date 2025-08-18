@@ -8,11 +8,11 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         :root {
-            --primary-color: #4a6fa5;
-            --secondary-color: #166088;
-            --accent-color: #4fc3f7;
+            --primary-color: #121212;
+            --secondary-color: #1e1e1e;
+            --accent-color: #2c2c2c;
             --light-color: #f8f9fa;
-            --dark-color: #343a40;
+            --dark-color: #e0e0e0;
         }
         
         body {
@@ -608,131 +608,10 @@
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-storage-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-analytics-compat.js"></script>
 
     <script>
-            const githubConfig = {
-        username: 'diffrentGuesser',
-        repo: 'imagewebsite', // Repository where images will be stored
-        branch: 'main', // Or your default branch
-        token: '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' // Generate this in GitHub settings
-    };
-
-    // [Previous setupApp function and other code remains the same until the uploadImage function]
-
-    async function uploadImage() {
-        const file = imageUpload.files[0];
-        if (!file) {
-            alert('Please select an image file');
-            return;
-        }
-        
-        if (!imageTitle.value) {
-            alert('Please enter a title');
-            return;
-        }
-        
-        if (!digitalPrice.value || !physicalPrice.value) {
-            alert('Please set both digital and physical prices');
-            return;
-        }
-        
-        uploadImageBtn.disabled = true;
-        uploadImageBtn.textContent = 'Uploading...';
-        
-        try {
-            // 1. Upload image to GitHub
-            const imageUrl = await uploadToGitHub(file);
-            
-            // 2. Add image data to Firestore
-            const imageData = {
-                title: imageTitle.value,
-                description: imageDescription.value,
-                tags: imageTags.value.split(',').map(tag => tag.trim()),
-                digitalPrice: parseFloat(digitalPrice.value),
-                physicalPrice: parseFloat(physicalPrice.value),
-                imageUrl: imageUrl,
-                createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-                uploadedBy: currentUser.uid
-            };
-            
-            await db.collection('images').add(imageData);
-            
-            // Reset form
-            imageUpload.value = '';
-            imageTitle.value = '';
-            imageDescription.value = '';
-            digitalPrice.value = '';
-            physicalPrice.value = '';
-            imageTags.value = '';
-            
-            // Reload images
-            loadImages();
-            
-            alert('Image uploaded successfully to GitHub!');
-        } catch (error) {
-            console.error('Error uploading image:', error);
-            alert('Error uploading image: ' + error.message);
-        } finally {
-            uploadImageBtn.disabled = false;
-            uploadImageBtn.textContent = 'Upload Image';
-        }
-    }
-
-    async function uploadToGitHub(file) {
-        return new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            
-            reader.onload = async function(e) {
-                try {
-                    // Generate a unique filename
-                    const filename = `images/${Date.now()}_${file.name.replace(/\s+/g, '_')}`;
-                    const content = e.target.result.split(',')[1]; // Get base64 content
-                    
-                    // GitHub API endpoint
-                    const apiUrl = `https://api.github.com/repos/${githubConfig.username}/${githubConfig.repo}/contents/${filename}`;
-                    
-                    // Create the request payload
-                    const payload = {
-                        message: `Upload image ${file.name}`,
-                        content: content,
-                        branch: githubConfig.branch
-                    };
-                    
-                    // Make the API request
-                    const response = await fetch(apiUrl, {
-                        method: 'PUT',
-                        headers: {
-                            'Authorization': `token ${githubConfig.token}`,
-                            'Content-Type': 'application/json',
-                            'Accept': 'application/vnd.github.v3+json'
-                        },
-                        body: JSON.stringify(payload)
-                    });
-                    
-                    const data = await response.json();
-                    
-                    if (!response.ok) {
-                        throw new Error(data.message || 'Failed to upload to GitHub');
-                    }
-                    
-                    // Construct the raw URL for the uploaded image
-                    const rawUrl = `https://raw.githubusercontent.com/${githubConfig.username}/${githubConfig.repo}/${githubConfig.branch}/${filename}`;
-                    resolve(rawUrl);
-                } catch (error) {
-                    reject(error);
-                }
-            };
-            
-            reader.onerror = () => {
-                reject(new Error('Failed to read file'));
-            };
-            
-            // Read the file as Data URL (base64)
-            reader.readAsDataURL(file);
-        });
-    }
-
         // Firebase configuration and initialization
         document.addEventListener('DOMContentLoaded', function() {
             // Display loading state
@@ -744,19 +623,21 @@
                     apiKey: "AIzaSyCNQgJypE5J0fHAuVKIHSXmrACfg2jjFFE",
                     authDomain: "image-1e1df.firebaseapp.com",
                     projectId: "image-1e1df",
+                    storageBucket: "image-1e1df.appspot.com",
                     messagingSenderId: "757991507289",
                     appId: "1:757991507289:web:de40e3eb2186da011a7848",
                     measurementId: "G-6GF5NHYHG0"
                 };
 
-                // Initialize Firebase without storage
+                // Initialize Firebase
                 const app = firebase.initializeApp(firebaseConfig);
                 const analytics = firebase.analytics();
                 const auth = firebase.auth();
                 const db = firebase.firestore();
+                const storage = firebase.storage();
 
                 // Now that Firebase is initialized, set up the rest of the app
-                setupApp(auth, db);
+                setupApp(auth, db, storage);
             } catch (error) {
                 console.error('Firebase initialization error:', error);
                 document.getElementById('firebaseInitError').textContent = 
@@ -766,7 +647,17 @@
             }
         });
 
-        function setupApp(auth, db) {
+        // Function to convert file to Base64
+        function fileToBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = error => reject(error);
+            });
+        }
+
+        function setupApp(auth, db, storage) {
             // DOM Elements
             const loginBtn = document.getElementById('loginBtn');
             const registerBtn = document.getElementById('registerBtn');
@@ -1043,7 +934,7 @@
 
             adminLink.addEventListener('click', (e) => {
                 e.preventDefault();
-                                // Show admin controls if hidden
+                // Show admin controls if hidden
                 if (adminControls.classList.contains('hidden')) {
                     adminControls.classList.remove('hidden');
                     // Load users if not already loaded
@@ -1208,7 +1099,7 @@
                     col.innerHTML = `
                         <div class="card h-100">
                             <div class="image-container">
-                                <img src="${image.imageUrl}" alt="${image.title}" class="card-img-top">
+                                <img src="${image.imageData || image.imageUrl}" alt="${image.title}" class="card-img-top">
                             </div>
                             <div class="card-body">
                                 <h5 class="card-title">${image.title}</h5>
@@ -1240,7 +1131,7 @@
                 if (!currentImage) return;
                 
                 document.getElementById('imageModalTitle').textContent = currentImage.title;
-                document.getElementById('modalImage').src = currentImage.imageUrl;
+                document.getElementById('modalImage').src = currentImage.imageData || currentImage.imageUrl;
                 document.getElementById('imageModalDescription').textContent = currentImage.description;
                 document.getElementById('imageModalTags').textContent = currentImage.tags.join(', ');
                 document.getElementById('digitalPriceDisplay').textContent = currentImage.digitalPrice;
@@ -1253,12 +1144,12 @@
                     const purchaseOption = document.querySelector('input[name="purchaseOption"]:checked').value;
                     const price = purchaseOption === 'digital' ? currentImage.digitalPrice : currentImage.physicalPrice;
                     
-                    addToCart(currentImage.id, currentImage.title, purchaseOption, price, currentImage.imageUrl);
+                    addToCart(currentImage.id, currentImage.title, purchaseOption, price, currentImage.imageData || currentImage.imageUrl);
                     imageModal.hide();
                 };
             }
 
-            // Upload image to GitHub repository
+            // Upload image as Base64 to Firestore
             async function uploadImage() {
                 const file = imageUpload.files[0];
                 if (!file) {
@@ -1280,17 +1171,8 @@
                 uploadImageBtn.textContent = 'Uploading...';
                 
                 try {
-                    // In a real implementation, you would:
-                    // 1. Upload the image to your GitHub repository using the GitHub API
-                    // 2. Get the raw URL of the uploaded image
-                    // 3. Store the image metadata in Firestore
-                    
-                    // For this demo, we'll simulate this process by:
-                    // 1. Generating a local URL for the image (this won't persist)
-                    // 2. Storing the metadata in Firestore
-                    
-                    // Generate local URL for the image
-                    const imageUrl = URL.createObjectURL(file);
+                    // Convert image to Base64
+                    const base64Data = await fileToBase64(file);
                     
                     // Add image data to Firestore
                     const imageData = {
@@ -1299,7 +1181,9 @@
                         tags: imageTags.value.split(',').map(tag => tag.trim()),
                         digitalPrice: parseFloat(digitalPrice.value),
                         physicalPrice: parseFloat(physicalPrice.value),
-                        imageUrl: imageUrl, // This would be the GitHub raw URL in production
+                        imageData: base64Data, // Store Base64 data
+                        fileName: file.name,
+                        fileType: file.type,
                         createdAt: firebase.firestore.FieldValue.serverTimestamp(),
                         uploadedBy: currentUser.uid
                     };
@@ -1317,7 +1201,7 @@
                     // Reload images
                     loadImages();
                     
-                    alert('Image uploaded successfully! (Note: In this demo, images are stored locally and will disappear on page refresh. In production, you would upload to GitHub.)');
+                    alert('Image uploaded successfully!');
                 } catch (error) {
                     console.error('Error uploading image:', error);
                     alert('Error uploading image. Please try again.');
